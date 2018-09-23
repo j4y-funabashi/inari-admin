@@ -6,9 +6,9 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/j4y_funabashi/inari-admin/indieauth"
 	"github.com/j4y_funabashi/inari-admin/login"
-	"github.com/j4y_funabashi/inari/indieauth"
-	"github.com/j4y_funabashi/inari/storage"
+	"github.com/j4y_funabashi/inari-admin/storage"
 )
 
 func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {

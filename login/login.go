@@ -7,7 +7,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
-	"github.com/j4y_funabashi/inari/indieauth"
+	"github.com/j4y_funabashi/inari-admin/indieauth"
 )
 
 func NewServer(logger *logrus.Logger, authClient indieauth.Client, clientID, redirectURL string) server {

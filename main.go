@@ -5,10 +5,10 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
+	"github.com/j4y_funabashi/inari-admin/indieauth"
 	"github.com/j4y_funabashi/inari-admin/login"
 	"github.com/j4y_funabashi/inari-admin/micropub"
-	"github.com/j4y_funabashi/inari/indieauth"
-	"github.com/j4y_funabashi/inari/storage"
+	"github.com/j4y_funabashi/inari-admin/storage"
 )
 
 func main() {
@@ -21,7 +21,8 @@ func main() {
 	redirectURL := "http://localhost:" + port + "/login-callback"
 
 	// deps
-	logger := NewLogger()
+	logger := log.New()
+	logger.Formatter = &log.JSONFormatter{}
 	router := mux.NewRouter()
 
 	sstore, err := storage.NewS3SessionStore(region, bucket)
@@ -44,10 +45,4 @@ func main() {
 
 	logger.Info("server running on port " + port)
 	logger.Fatal(http.ListenAndServe(":"+port, router))
-}
-
-func NewLogger() *log.Logger {
-	l := log.New()
-	l.Formatter = &log.JSONFormatter{}
-	return l
 }

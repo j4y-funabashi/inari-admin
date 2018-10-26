@@ -1,99 +1,16 @@
 {{ define "content" }}
 
-<span class="relative">
+<div>
+    <a href="/composer">back</a>
+    <h1>{{ .PageTitle }}</h1>
+</div>
 
-    <input style='
-    position: absolute;
-    height: 1px;
-    width: 1px;
-    background: none;
-    border: 0;
-    clip: rect(0 0 0 0);
-    clip-path: inset(50%);
-    overflow: hidden;
-    padding: 0;
-    /* When the input receives focus, simulate button focus states on the label */
-    &:focus + label { box-shadow: 0 0 0 var(--button-focus-width) color(var(--button-bg-color) alpha(50%)); }
-    &:focus + label.button-secondary { box-shadow: 0 0 0 var(--button-focus-width) color(var(--button-bg-color-secondary) alpha(50%)); }
-    &:focus + label.button-success { box-shadow: 0 0 0 var(--button-focus-width) color(var(--button-bg-color-success) alpha(50%)); }
-    &:focus + label.button-info { box-shadow: 0 0 0 var(--button-focus-width) color(var(--button-bg-color-info) alpha(50%)); }
-    &:focus + label.button-warning { box-shadow: 0 0 0 var(--button-focus-width) color(var(--button-bg-color-warning) alpha(50%)); }
-    &:focus + label.button-danger { box-shadow: 0 0 0 var(--button-focus-width) color(var(--button-bg-color-danger) alpha(50%)); }
-    &:focus + label.button-light { box-shadow: 0 0 0 var(--button-focus-width) color(var(--button-bg-color-light) alpha(50%)); }
-    &:focus + label.button-dark { box-shadow: 0 0 0 var(--button-focus-width) color(var(--button-bg-color-dark) alpha(50%)); }
-    ' id="photo-upload" type="file" accept="image/*" name="photo" id="photo-upload" required>
-
-    <label class='{{ template "btn-cta" }} bg-blue' for="photo-upload">Select Photo</label>
-</span>
-
-<form method="post" action="/new/photo" enctype="application/x-www-form-urlencoded">
-
-    <img id="photo-img" width="200px" height="200px" />
-    <input id="photo-input" type="hidden" name="photo" value="" />
-
-    <textarea name="content" placeholder="Add a caption" class='{{ template "input-textarea" }}' autofocus></textarea>
-    <input type="text" name="category" class='{{ template "input-text" }}' placeholder="tag1, tag2" />
-    <input type="text" id="location-input" name="location" class='{{ template "input-text" }}' placeholder="location" />
-
-    <input type="text" id="published-input" name="published" value="" class='{{ template "input-text" }}' />
-
-    <button type="submit" class='{{ template "btn-cta" }}'>Upload</button>
+<form method="post" action="/composer/addphoto" enctype="multipart/form-data">
+    <input id="photo-upload" type="file" accept="image/*" name="photo" class="input-reset ma1" required>
+    <input id="photo-upload" type="file" accept="image/*" name="photo" class="input-reset ma1">
+    <input id="photo-upload" type="file" accept="image/*" name="photo" class="input-reset ma1">
+    <button type="submit" class='{{ template "btn-cta" }}'>Preview</button>
     <input type="hidden" name="h" value="entry" />
 </form>
-
-
-<script>
-
-    var inputElement = document.getElementById("photo-upload");
-inputElement.addEventListener("change", handleFiles, false);
-
-function handleFiles() {
-    const mediaEndpoint = {{ .MediaEndpoint }}
-    const bearerToken = "Bearer {{ .BearerToken }}"
-    const IMAGE_PROXY = {{ .ImageProxy }}
-    console.log(mediaEndpoint)
-
-    var fileList = this.files; /* now you can work with the file list */
-    for (var i = 0, numFiles = fileList.length; i < numFiles; i++) {
-        var f = fileList[i]
-        console.log(f)
-        console.log(f.name)
-
-        var formData = new FormData();
-        formData.append("file",f)
-
-        var xhr = new XMLHttpRequest();
-        xhr.open("POST", mediaEndpoint);
-        xhr.setRequestHeader("Authorization", bearerToken)
-        xhr.responseType = "json";
-        xhr.send(formData);
-
-        xhr.onreadystatechange = function() {//Call a function when the state changes.
-            if (xhr.readyState == XMLHttpRequest.DONE) {
-                console.log(xhr.status)
-                if (xhr.status == 201) {
-                    var locElement = document.getElementById("location-input");
-                    var pubElement = document.getElementById("published-input");
-                    var imgElement = document.getElementById("photo-img");
-                    var imgInput = document.getElementById("photo-input");
-                    var headers = xhr.getAllResponseHeaders();
-                    var loc = xhr.getResponseHeader("Location");
-                    console.log(loc)
-                    console.log(xhr.response)
-                    if (xhr.response.location) {
-                        locElement.value = xhr.response.location
-                    }
-                    if (xhr.response.published) {
-                        pubElement.value = xhr.response.published
-                    }
-                    imgElement.src = IMAGE_PROXY + loc
-                    imgInput.value = loc
-                }
-            }
-        }
-    }
-
-}
-</script>
 
 {{ end }}

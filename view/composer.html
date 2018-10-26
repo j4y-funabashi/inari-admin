@@ -1,0 +1,34 @@
+{{ define "content" }}
+
+<div>
+    <a href="/composer">back</a>
+    <h1>{{ .PageTitle }}</h1>
+</div>
+
+<div>
+    <img class="v-mid" src="http://165.227.131.254:8080/35x35/{{ .User.Photo }}" />
+    <span class="v-mid">{{ .User.Name }}</span>
+</div>
+
+<form method="post" action="/submit" enctype="application/x-www-form-urlencoded">
+    <textarea name="content" placeholder="Add a caption" class='{{ template "input-textarea" }}' autofocus></textarea>
+    <input type="hidden" name="h" value="entry" />
+
+    {{ range .Photos }}
+    <img src="http://165.227.131.254:8080/75x75/{{ .URL }}" />
+    {{ end }}
+
+    <ul>
+        <li><a href="/composer/addpublished">
+                {{if .Published }}
+                {{ .Published }}
+                {{end}}
+            </a></li>
+        <li><a href="/composer/addphoto">Photo</a></li>
+        <li><a href="/composer/addlocation">Location</a></li>
+    </ul>
+    <button type="submit" class='{{ template "btn-cta" }}'>Post</button>
+</form>
+
+
+{{ end }}

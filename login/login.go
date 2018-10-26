@@ -5,9 +5,9 @@ import (
 	"html/template"
 	"net/http"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"github.com/j4y_funabashi/inari-admin/indieauth"
+	"github.com/sirupsen/logrus"
 )
 
 func NewServer(logger *logrus.Logger, authClient indieauth.Client, clientID, redirectURL string) server {

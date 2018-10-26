@@ -3,12 +3,12 @@ package main
 import (
 	"net/http"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"github.com/j4y_funabashi/inari-admin/indieauth"
 	"github.com/j4y_funabashi/inari-admin/login"
 	"github.com/j4y_funabashi/inari-admin/micropub"
 	"github.com/j4y_funabashi/inari-admin/storage"
+	log "github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -30,6 +30,7 @@ func main() {
 		logger.WithError(err).Fatal("failed to create session store")
 	}
 	authClient := indieauth.NewClient("", sstore, logger)
+	mpClient := micropub.NewClient(logger)
 
 	// servers
 	loginServer := login.NewServer(
@@ -40,7 +41,7 @@ func main() {
 	)
 	loginServer.Routes(router)
 
-	micropubClientServer := micropub.NewServer(logger)
+	micropubClientServer := micropub.NewServer(logger, sstore, mpClient)
 	micropubClientServer.Routes(router)
 
 	logger.Info("server running on port " + port)

@@ -9,9 +9,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/j4y_funabashi/inari-admin/responder"
 	"github.com/j4y_funabashi/inari-admin/storage"
+	"github.com/sirupsen/logrus"
 )
 
 type TokenEndpoint interface {
@@ -241,7 +241,7 @@ func (client client) Callback(state, code, clientId, redirectUri string) respond
 
 	cookie := fmt.Sprintf("sessionid=%s; Path=/", s.Uid)
 	headers := map[string]string{
-		"Location":   "/new",
+		"Location":   "/composer",
 		"Set-Cookie": cookie,
 	}
 	res.StatusCode = http.StatusSeeOther

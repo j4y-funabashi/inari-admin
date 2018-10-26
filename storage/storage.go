@@ -16,8 +16,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/tomnomnom/linkheader"
 	"golang.org/x/net/html"
+	"willnorris.com/go/microformats"
 
-	_ "github.com/mattn/go-sqlite3"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -27,18 +27,49 @@ type SessionStore interface {
 }
 
 type UserSession struct {
-	Uid                   string `json:"uid"`
-	Me                    string `json:"me"`
-	ClientId              string `json:"client_id"`
-	RedirectUri           string `json:"redirect_uri"`
-	Scope                 string `json:"scope"`
-	State                 string `json:"state"`
-	AuthorizationEndpoint string `json:"authorization_endpoint"`
-	TokenEndpoint         string `json:"token_endpoint"`
-	MicropubEndpoint      string `json:"micropub_endpoint"`
-	MediaEndpoint         string `json:"media_endpoint"`
-	AccessToken           string `json:"access_token"`
-	TokenType             string `json:"token_type"`
+	Uid                   string       `json:"uid"`
+	Me                    string       `json:"me"`
+	ClientId              string       `json:"client_id"`
+	RedirectUri           string       `json:"redirect_uri"`
+	Scope                 string       `json:"scope"`
+	State                 string       `json:"state"`
+	AuthorizationEndpoint string       `json:"authorization_endpoint"`
+	TokenEndpoint         string       `json:"token_endpoint"`
+	MicropubEndpoint      string       `json:"micropub_endpoint"`
+	MediaEndpoint         string       `json:"media_endpoint"`
+	AccessToken           string       `json:"access_token"`
+	TokenType             string       `json:"token_type"`
+	ComposerData          ComposerData `json:"composer_data"`
+	HCard                 HCard        `json:"h_card"`
+}
+
+type MediaUpload struct {
+	URL       string `json:"url"`
+	Published string `json:"published"`
+	Location  string `json:"location"`
+}
+
+type ComposerData struct {
+	Photos    []MediaUpload `json:"photos"`
+	Published string
+}
+
+func (usess *UserSession) AddPhotoUpload(url, pub, loc string) {
+	usess.ComposerData.Photos = append(
+		usess.ComposerData.Photos,
+		MediaUpload{
+			URL:       url,
+			Published: pub,
+			Location:  loc,
+		},
+	)
+	if pub != "" {
+		usess.ComposerData.Published = pub
+	}
+}
+
+func (usess *UserSession) ClearComposerData() {
+	usess.ComposerData = ComposerData{}
 }
 
 func NewUserSession(me, clientId, redirectUri string) (UserSession, error) {
@@ -78,6 +109,7 @@ func (usess *UserSession) DiscoverEndpoints() error {
 		log.Printf("failed to GET [%s][%s]", usess.Me, err.Error())
 		return err
 	}
+
 	if resp.StatusCode != http.StatusOK {
 		log.Printf("URL returned a non-200: [%s][%d]", usess.Me, resp.StatusCode)
 		return fmt.Errorf("URL returned a non-200")
@@ -95,7 +127,83 @@ func (usess *UserSession) DiscoverEndpoints() error {
 	usess.TokenEndpoint = findEndpoint(doc, "token_endpoint", resp.Header)
 	usess.MicropubEndpoint = findEndpoint(doc, "micropub", resp.Header)
 	usess.discoverMediaEndpoint()
+
+	// try to find h-card
+	usess.HCard = discoverHcard(usess.Me)
+
 	return nil
+}
+
+type HCard struct {
+	Name  string `json:"name"`
+	URL   string `json:"url"`
+	Photo string `json:"photo"`
+}
+
+func discoverHcard(meURL string) HCard {
+	resp, err := http.Get(meURL)
+	if err != nil {
+		log.Printf("failed to GET [%s][%s]", meURL, err.Error())
+		return HCard{}
+	}
+	pURL, err := url.Parse(meURL)
+	if err != nil {
+		log.Printf("failed to parse URL [%s]", err.Error())
+		return HCard{}
+	}
+	mf := microformats.Parse(resp.Body, pURL)
+	log.Printf("mf2: %+v", mf)
+	for _, item := range mf.Items {
+		if sliceContains(item.Type, "h-card") {
+			if isRepresentativeHcard(item, meURL) {
+				return HCard{
+					Name:  mfGetFirstString(item.Properties["name"]),
+					URL:   mfGetFirstString(item.Properties["url"]),
+					Photo: mfGetFirstString(item.Properties["photo"]),
+				}
+			}
+		}
+	}
+	return HCard{}
+}
+
+func isRepresentativeHcard(mf *microformats.Microformat, meURL string) bool {
+	if mfSliceContains(mf.Properties["url"], meURL) == false {
+		return false
+	}
+	if mfSliceContains(mf.Properties["uid"], meURL) == false {
+		return false
+	}
+	return true
+}
+
+func mfGetFirstString(property []interface{}) string {
+	for _, val := range property {
+		if v, ok := val.(string); ok == true {
+			return v
+		}
+	}
+	return ""
+}
+
+func mfSliceContains(property []interface{}, value string) bool {
+	for _, val := range property {
+		if v, ok := val.(string); ok == true {
+			if v == value {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func sliceContains(slice []string, value string) bool {
+	for _, v := range slice {
+		if strings.ToLower(v) == strings.ToLower(value) {
+			return true
+		}
+	}
+	return false
 }
 
 func (usess *UserSession) discoverMediaEndpoint() {

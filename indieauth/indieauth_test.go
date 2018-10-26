@@ -5,9 +5,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/j4y_funabashi/inari-admin/indieauth"
 	"github.com/j4y_funabashi/inari-admin/storage"
+	"github.com/sirupsen/logrus"
 )
 
 type mockSessionStore struct {

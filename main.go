@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/j4y_funabashi/inari-admin/pkg/indieauth"
@@ -14,11 +15,11 @@ import (
 func main() {
 
 	// config
-	port := "8089"
+	port := "80"
 	region := "eu-central-1"
 	bucket := "admin.funabashi.co.uk"
 	clientID := "https://admin.funabashi.co.uk"
-	redirectURL := "http://localhost:" + port + "/login-callback"
+	redirectURL := os.Getenv("CALLBACK_URL")
 
 	// deps
 	logger := log.New()

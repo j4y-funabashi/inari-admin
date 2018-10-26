@@ -1,0 +1,12 @@
+version: "2"
+
+services:
+    admin:
+        build:
+            context: ./
+            dockerfile: Dockerfile
+        env_file: .env
+        environment:
+            CALLBACK_URL: "http://localhost:8090/login-callback"
+        ports:
+            - 8090:80

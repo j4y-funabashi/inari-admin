@@ -7,7 +7,7 @@ import (
 	"github.com/j4y_funabashi/inari-admin/indieauth"
 	"github.com/j4y_funabashi/inari-admin/login"
 	"github.com/j4y_funabashi/inari-admin/micropub"
-	"github.com/j4y_funabashi/inari-admin/storage"
+	"github.com/j4y_funabashi/inari-admin/pkg/session"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -25,7 +25,7 @@ func main() {
 	logger.Formatter = &log.JSONFormatter{}
 	router := mux.NewRouter()
 
-	sstore, err := storage.NewS3SessionStore(region, bucket)
+	sstore, err := session.NewS3SessionStore(region, bucket)
 	if err != nil {
 		logger.WithError(err).Fatal("failed to create session store")
 	}

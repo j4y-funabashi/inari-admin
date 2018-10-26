@@ -6,20 +6,20 @@ import (
 	"testing"
 
 	"github.com/j4y_funabashi/inari-admin/indieauth"
-	"github.com/j4y_funabashi/inari-admin/storage"
+	"github.com/j4y_funabashi/inari-admin/pkg/session"
 	"github.com/sirupsen/logrus"
 )
 
 type mockSessionStore struct {
 	tokenEndpoint string
-	userSession   storage.UserSession
+	userSession   session.UserSession
 }
 
-func (s mockSessionStore) Create(usess storage.UserSession) error {
+func (s mockSessionStore) Create(usess session.UserSession) error {
 	return nil
 }
 
-func (s mockSessionStore) FetchByID(postID string) (storage.UserSession, error) {
+func (s mockSessionStore) FetchByID(postID string) (session.UserSession, error) {
 	sess := s.userSession
 	sess.TokenEndpoint = s.tokenEndpoint
 	return sess, nil
@@ -32,7 +32,7 @@ func TestCallback(t *testing.T) {
 		code           string
 		clientID       string
 		redirectURL    string
-		userSession    storage.UserSession
+		userSession    session.UserSession
 		tokenServerRes func(w http.ResponseWriter, r *http.Request)
 	}{
 		{
@@ -41,7 +41,7 @@ func TestCallback(t *testing.T) {
 			code:        "",
 			clientID:    "",
 			redirectURL: "",
-			userSession: storage.UserSession{Me: "http://example.com/jay"},
+			userSession: session.UserSession{Me: "http://example.com/jay"},
 			tokenServerRes: func(w http.ResponseWriter, r *http.Request) {
 				w.Write([]byte(`{"me": "https://jay.example.com", "client_id": "test", "scope": "create"}`))
 				w.WriteHeader(http.StatusOK)

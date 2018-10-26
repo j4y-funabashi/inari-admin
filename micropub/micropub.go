@@ -12,16 +12,16 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/j4y_funabashi/inari-admin/storage"
+	"github.com/j4y_funabashi/inari-admin/pkg/session"
 	"github.com/sirupsen/logrus"
 )
 
 type MPClient interface {
-	UploadToMediaServer(uploadedFile UploadedFile, usess storage.UserSession) (MediaEndpointResponse, error)
+	UploadToMediaServer(uploadedFile UploadedFile, usess session.UserSession) (MediaEndpointResponse, error)
 	SendRequest(body url.Values, endpoint, bearerToken string) (MicropubEndpointResponse, error)
 }
 
-func NewServer(logger *logrus.Logger, ss storage.SessionStore, client MPClient) server {
+func NewServer(logger *logrus.Logger, ss session.SessionStore, client MPClient) server {
 	s := server{
 		logger:       logger,
 		SessionStore: ss,
@@ -32,7 +32,7 @@ func NewServer(logger *logrus.Logger, ss storage.SessionStore, client MPClient) 
 
 type server struct {
 	logger       *logrus.Logger
-	SessionStore storage.SessionStore
+	SessionStore session.SessionStore
 	client       MPClient
 }
 
@@ -211,8 +211,8 @@ func (s *server) ShowComposerForm(sessionid string) HttpResponse {
 	w := new(bytes.Buffer)
 	v := struct {
 		PageTitle string
-		Photos    []storage.MediaUpload
-		User      storage.HCard
+		Photos    []session.MediaUpload
+		User      session.HCard
 		Published string
 		Location  string
 	}{
@@ -307,7 +307,7 @@ func NewClient(logger *logrus.Logger) Client {
 	}
 }
 
-func (mpclient Client) UploadToMediaServer(uploadedFile UploadedFile, usess storage.UserSession) (MediaEndpointResponse, error) {
+func (mpclient Client) UploadToMediaServer(uploadedFile UploadedFile, usess session.UserSession) (MediaEndpointResponse, error) {
 	// copy file to multipart body
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)

@@ -10,23 +10,23 @@ import (
 	"testing"
 
 	"github.com/j4y_funabashi/inari-admin/micropub"
-	"github.com/j4y_funabashi/inari-admin/storage"
+	"github.com/j4y_funabashi/inari-admin/pkg/session"
 	"github.com/matryer/is"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 )
 
 type mockSessionStore struct {
-	createResponse    func(usess storage.UserSession) error
-	fetchByIDResponse func(postID string) (storage.UserSession, error)
+	createResponse    func(usess session.UserSession) error
+	fetchByIDResponse func(postID string) (session.UserSession, error)
 }
 
 type mockClient struct {
-	uploadResponse func(uploadedFile micropub.UploadedFile, usess storage.UserSession) (micropub.MediaEndpointResponse, error)
+	uploadResponse func(uploadedFile micropub.UploadedFile, usess session.UserSession) (micropub.MediaEndpointResponse, error)
 	sendRequest    func(body url.Values, endpoint, bearerToken string) (micropub.MicropubEndpointResponse, error)
 }
 
-func (mc mockClient) UploadToMediaServer(uploadedFile micropub.UploadedFile, usess storage.UserSession) (micropub.MediaEndpointResponse, error) {
+func (mc mockClient) UploadToMediaServer(uploadedFile micropub.UploadedFile, usess session.UserSession) (micropub.MediaEndpointResponse, error) {
 	return mc.uploadResponse(uploadedFile, usess)
 }
 
@@ -34,11 +34,11 @@ func (mc mockClient) SendRequest(body url.Values, endpoint, bearerToken string) 
 	return mc.sendRequest(body, endpoint, bearerToken)
 }
 
-func (sstore mockSessionStore) Create(usess storage.UserSession) error {
+func (sstore mockSessionStore) Create(usess session.UserSession) error {
 	return sstore.createResponse(usess)
 }
 
-func (sstore mockSessionStore) FetchByID(postID string) (storage.UserSession, error) {
+func (sstore mockSessionStore) FetchByID(postID string) (session.UserSession, error) {
 	return sstore.fetchByIDResponse(postID)
 }
 
@@ -46,7 +46,7 @@ func TestAddPhotos(t *testing.T) {
 
 	is := is.NewRelaxed(t)
 	goodUploadedFile := micropub.UploadedFile{Filename: "", File: strings.NewReader("")}
-	expectedPhotos := []storage.MediaUpload{
+	expectedPhotos := []session.MediaUpload{
 		{
 			URL:       "https://example.com/1.jpg",
 			Published: "2010-01-28",
@@ -61,18 +61,18 @@ func TestAddPhotos(t *testing.T) {
 
 	var tests = []struct {
 		name              string
-		createResponse    func(usess storage.UserSession) error
-		fetchByIDResponse func(postID string) (storage.UserSession, error)
-		uploadResponse    func(uploadedFile micropub.UploadedFile, usess storage.UserSession) (micropub.MediaEndpointResponse, error)
+		createResponse    func(usess session.UserSession) error
+		fetchByIDResponse func(postID string) (session.UserSession, error)
+		uploadResponse    func(uploadedFile micropub.UploadedFile, usess session.UserSession) (micropub.MediaEndpointResponse, error)
 		expected          micropub.HttpResponse
 		fileList          []micropub.UploadedFile
 	}{
 		{
 			name: "happy paths",
-			fetchByIDResponse: func(postID string) (storage.UserSession, error) {
-				return storage.UserSession{}, nil
+			fetchByIDResponse: func(postID string) (session.UserSession, error) {
+				return session.UserSession{}, nil
 			},
-			createResponse: func(usess storage.UserSession) error {
+			createResponse: func(usess session.UserSession) error {
 
 				if len(usess.ComposerData.Photos) != len(expectedPhotos) {
 					t.Errorf("session should contain %d photo, found %d", len(expectedPhotos), len(usess.ComposerData.Photos))
@@ -88,7 +88,7 @@ func TestAddPhotos(t *testing.T) {
 
 				return nil
 			},
-			uploadResponse: func(uploadedFile micropub.UploadedFile, usess storage.UserSession) (micropub.MediaEndpointResponse, error) {
+			uploadResponse: func(uploadedFile micropub.UploadedFile, usess session.UserSession) (micropub.MediaEndpointResponse, error) {
 				return mediaResponse, nil
 			},
 			expected: micropub.HttpResponse{StatusCode: 303, Headers: map[string]string{"Location": "/composer"}},
@@ -213,7 +213,7 @@ func TestUploadToMediaServer(t *testing.T) {
 				}
 				json.NewEncoder(w).Encode(jsonres)
 			}))
-			usess := storage.UserSession{
+			usess := session.UserSession{
 				MediaEndpoint: mediaServer.URL,
 				AccessToken:   "123testtoken",
 			}
@@ -235,8 +235,8 @@ func TestSubmitPost(t *testing.T) {
 		name              string
 		content           string
 		h                 string
-		createResponse    func(usess storage.UserSession) error
-		fetchByIDResponse func(postID string) (storage.UserSession, error)
+		createResponse    func(usess session.UserSession) error
+		fetchByIDResponse func(postID string) (session.UserSession, error)
 		sendRequest       func(body url.Values, endpoint, bearerToken string) (micropub.MicropubEndpointResponse, error)
 		expected          micropub.HttpResponse
 		fileList          []micropub.UploadedFile
@@ -245,13 +245,13 @@ func TestSubmitPost(t *testing.T) {
 			name:           "happy paths",
 			content:        "hellchicken content",
 			h:              "entry",
-			createResponse: func(usess storage.UserSession) error { return nil },
-			fetchByIDResponse: func(postID string) (storage.UserSession, error) {
-				return storage.UserSession{
+			createResponse: func(usess session.UserSession) error { return nil },
+			fetchByIDResponse: func(postID string) (session.UserSession, error) {
+				return session.UserSession{
 					MicropubEndpoint: "http://micropub.example.com",
 					AccessToken:      "hellchickentoken",
-					ComposerData: storage.ComposerData{
-						Photos: []storage.MediaUpload{
+					ComposerData: session.ComposerData{
+						Photos: []session.MediaUpload{
 							{URL: "http://example.com/1.jpg"},
 							{URL: "http://example.com/2.jpg"},
 							{URL: "http://example.com/3.jpg"},

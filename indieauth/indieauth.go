@@ -9,8 +9,8 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/j4y_funabashi/inari-admin/pkg/session"
 	"github.com/j4y_funabashi/inari-admin/responder"
-	"github.com/j4y_funabashi/inari-admin/storage"
 	"github.com/sirupsen/logrus"
 )
 
@@ -51,7 +51,7 @@ type Client interface {
 	Callback(state, code, clientId, redirectUri string) responder.Response
 }
 
-func NewClient(tokenEndpoint string, sessionStore storage.SessionStore, logger *logrus.Logger) Client {
+func NewClient(tokenEndpoint string, sessionStore session.SessionStore, logger *logrus.Logger) Client {
 	return client{
 		TokenEndpoint: tokenEndpoint,
 		SessionStore:  sessionStore,
@@ -61,7 +61,7 @@ func NewClient(tokenEndpoint string, sessionStore storage.SessionStore, logger *
 
 type client struct {
 	TokenEndpoint string
-	SessionStore  storage.SessionStore
+	SessionStore  session.SessionStore
 	logger        *logrus.Logger
 }
 
@@ -98,7 +98,7 @@ func (client client) VerifyAccessToken(bearerToken string) (TokenResponse, error
 
 func (client client) Init(me, clientID, redirectURI string) responder.Response {
 	var res responder.Response
-	usess, err := storage.NewUserSession(
+	usess, err := session.NewUserSession(
 		me,
 		clientID,
 		redirectURI,

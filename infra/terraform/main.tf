@@ -17,7 +17,9 @@ variable "app_env" {}
 variable "app_domain" {}
 variable "certificate_arn" {}
 variable "region" {}
-variable "app_version" {}
+variable "app_version" {
+default = "0.0.12"
+}
 
 resource "aws_api_gateway_rest_api" "main" {
   name = "${var.app_name}"
@@ -84,6 +86,32 @@ module "login_callback_lambda" {
   app_method    = "GET"
   deploy_bucket = "dep-inari-admin"
   deploy_key    = "login-callback"
+  apigw_id      = "${aws_api_gateway_rest_api.main.id}"
+  apigw_root_id = "${aws_api_gateway_rest_api.main.root_resource_id}"
+  execution_arn = "${aws_api_gateway_deployment.main.execution_arn}"
+}
+
+module "new_photo_lambda" {
+  source        = "./lambda-service"
+  app_name      = "${var.app_name}-new-photo"
+  app_version   = "${var.app_version}"
+  app_path      = "new"
+  app_method    = "GET"
+  deploy_bucket = "dep-inari-admin"
+  deploy_key    = "new-photo"
+  apigw_id      = "${aws_api_gateway_rest_api.main.id}"
+  apigw_root_id = "${aws_api_gateway_rest_api.main.root_resource_id}"
+  execution_arn = "${aws_api_gateway_deployment.main.execution_arn}"
+}
+
+module "submit_lambda" {
+  source        = "./lambda-service"
+  app_name      = "${var.app_name}-submit"
+  app_version   = "${var.app_version}"
+  app_path      = "submit"
+  app_method    = "POST"
+  deploy_bucket = "dep-inari-admin"
+  deploy_key    = "submit"
   apigw_id      = "${aws_api_gateway_rest_api.main.id}"
   apigw_root_id = "${aws_api_gateway_rest_api.main.root_resource_id}"
   execution_arn = "${aws_api_gateway_deployment.main.execution_arn}"

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION=0.0.8
+VERSION=0.0.12
 PROFILE=j4y
 S3_BUCKET=dep-inari-admin
 
@@ -20,3 +20,5 @@ build_lambda () {
 build_lambda login
 build_lambda login-init
 build_lambda login-callback
+build_lambda new-photo
+build_lambda submit

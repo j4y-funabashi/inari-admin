@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/j4y_funabashi/inari-admin/micropub"
+	"github.com/j4y_funabashi/inari-admin/pkg/micropub"
 	"github.com/j4y_funabashi/inari-admin/pkg/session"
 	"github.com/matryer/is"
 	"github.com/sirupsen/logrus"

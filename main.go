@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/j4y_funabashi/inari-admin/indieauth"
-	"github.com/j4y_funabashi/inari-admin/login"
-	"github.com/j4y_funabashi/inari-admin/micropub"
+	"github.com/j4y_funabashi/inari-admin/pkg/indieauth"
+	"github.com/j4y_funabashi/inari-admin/pkg/login"
+	"github.com/j4y_funabashi/inari-admin/pkg/micropub"
 	"github.com/j4y_funabashi/inari-admin/pkg/session"
 	log "github.com/sirupsen/logrus"
 )

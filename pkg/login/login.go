@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/j4y_funabashi/inari-admin/indieauth"
+	"github.com/j4y_funabashi/inari-admin/pkg/indieauth"
 	"github.com/sirupsen/logrus"
 )
 

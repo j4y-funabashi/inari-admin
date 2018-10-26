@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/j4y_funabashi/inari-admin/pkg/session"
-	"github.com/j4y_funabashi/inari-admin/responder"
 	"github.com/sirupsen/logrus"
 )
 
@@ -45,10 +44,16 @@ func (tr TokenResponse) IsValid() bool {
 	return true
 }
 
+type Response struct {
+	Headers    map[string]string
+	Body       string
+	StatusCode int
+}
+
 type Client interface {
 	VerifyAccessToken(bearerToken string) (TokenResponse, error)
-	Init(me, clientId, redirectUri string) responder.Response
-	Callback(state, code, clientId, redirectUri string) responder.Response
+	Init(me, clientId, redirectUri string) Response
+	Callback(state, code, clientId, redirectUri string) Response
 }
 
 func NewClient(tokenEndpoint string, sessionStore session.SessionStore, logger *logrus.Logger) Client {
@@ -96,8 +101,8 @@ func (client client) VerifyAccessToken(bearerToken string) (TokenResponse, error
 	return tokenRes, nil
 }
 
-func (client client) Init(me, clientID, redirectURI string) responder.Response {
-	var res responder.Response
+func (client client) Init(me, clientID, redirectURI string) Response {
+	var res Response
 	usess, err := session.NewUserSession(
 		me,
 		clientID,
@@ -165,8 +170,8 @@ func (vr VerifyCodeResponse) parseDomain(dom string) string {
 	return domain
 }
 
-func (client client) Callback(state, code, clientId, redirectUri string) responder.Response {
-	var res responder.Response
+func (client client) Callback(state, code, clientId, redirectUri string) Response {
+	var res Response
 
 	// FETCH USER SESSION
 	s, err := client.SessionStore.FetchByID(state)

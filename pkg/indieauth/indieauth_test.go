@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/j4y_funabashi/inari-admin/indieauth"
+	"github.com/j4y_funabashi/inari-admin/pkg/indieauth"
 	"github.com/j4y_funabashi/inari-admin/pkg/session"
 	"github.com/sirupsen/logrus"
 )

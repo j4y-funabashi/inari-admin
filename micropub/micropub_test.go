@@ -44,7 +44,7 @@ func (sstore mockSessionStore) FetchByID(postID string) (storage.UserSession, er
 
 func TestAddPhotos(t *testing.T) {
 
-	is := is.New(t)
+	is := is.NewRelaxed(t)
 	goodUploadedFile := micropub.UploadedFile{Filename: "", File: strings.NewReader("")}
 	expectedPhotos := []storage.MediaUpload{
 		{
@@ -84,6 +84,7 @@ func TestAddPhotos(t *testing.T) {
 					}
 				}
 				is.Equal(usess.ComposerData.Published, "2010-01-28")
+				is.Equal(usess.ComposerData.Location, "leeds")
 
 				return nil
 			},
@@ -256,6 +257,7 @@ func TestSubmitPost(t *testing.T) {
 							{URL: "http://example.com/3.jpg"},
 						},
 						Published: "2018-01-28T10:47:54+01:00",
+						Location:  "leedz",
 					},
 				}, nil
 			},
@@ -269,8 +271,8 @@ func TestSubmitPost(t *testing.T) {
 				is.Equal(body["photo"][0], "http://example.com/1.jpg")
 				is.Equal(body["photo"][1], "http://example.com/2.jpg")
 				is.Equal(body["photo"][2], "http://example.com/3.jpg")
-				is.True(body.Get("published") != "")
 				is.Equal(body.Get("published"), "2018-01-28T10:47:54+01:00")
+				is.Equal(body.Get("location"), "leedz")
 
 				return micropub.MicropubEndpointResponse{}, nil
 			},

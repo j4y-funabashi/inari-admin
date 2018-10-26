@@ -52,6 +52,7 @@ type MediaUpload struct {
 type ComposerData struct {
 	Photos    []MediaUpload `json:"photos"`
 	Published string
+	Location  string
 }
 
 func (usess *UserSession) AddPhotoUpload(url, pub, loc string) {
@@ -65,6 +66,9 @@ func (usess *UserSession) AddPhotoUpload(url, pub, loc string) {
 	)
 	if pub != "" {
 		usess.ComposerData.Published = pub
+	}
+	if loc != "" {
+		usess.ComposerData.Location = loc
 	}
 }
 

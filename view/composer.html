@@ -22,10 +22,18 @@
         <li><a href="/composer/addpublished">
                 {{if .Published }}
                 {{ .Published }}
+                {{else}}
+                Published
                 {{end}}
             </a></li>
         <li><a href="/composer/addphoto">Photo</a></li>
-        <li><a href="/composer/addlocation">Location</a></li>
+        <li><a href="/composer/addlocation">
+                {{if .Location }}
+                {{ .Location }}
+                {{else}}
+                Location
+                {{end}}
+            </a></li>
     </ul>
     <button type="submit" class='{{ template "btn-cta" }}'>Post</button>
 </form>

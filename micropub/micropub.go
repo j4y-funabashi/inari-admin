@@ -97,6 +97,9 @@ func (s *server) SubmitPost(sessionid, content, h string) HttpResponse {
 		published = usess.ComposerData.Published
 	}
 	formData.Add("published", published)
+	if usess.ComposerData.Location != "" {
+		formData.Add("location", usess.ComposerData.Location)
+	}
 
 	s.logger.WithFields(logrus.Fields{"request": formData}).Info("built micropub request")
 
@@ -211,11 +214,13 @@ func (s *server) ShowComposerForm(sessionid string) HttpResponse {
 		Photos    []storage.MediaUpload
 		User      storage.HCard
 		Published string
+		Location  string
 	}{
 		PageTitle: "Create Post",
 		Photos:    usess.ComposerData.Photos,
 		User:      usess.HCard,
 		Published: usess.ComposerData.Published,
+		Location:  usess.ComposerData.Location,
 	}
 	t.ExecuteTemplate(w, "layout", v)
 

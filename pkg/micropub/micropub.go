@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -21,11 +22,16 @@ type MPClient interface {
 	SendRequest(body url.Values, endpoint, bearerToken string) (MicropubEndpointResponse, error)
 }
 
-func NewServer(logger *logrus.Logger, ss session.SessionStore, client MPClient) server {
+type GeoCoder interface {
+	Lookup(address string) []session.Location
+}
+
+func NewServer(logger *logrus.Logger, ss session.SessionStore, client MPClient, geocoder GeoCoder) server {
 	s := server{
 		logger:       logger,
 		SessionStore: ss,
 		client:       client,
+		geocoder:     geocoder,
 	}
 	return s
 }
@@ -34,6 +40,7 @@ type server struct {
 	logger       *logrus.Logger
 	SessionStore session.SessionStore
 	client       MPClient
+	geocoder     GeoCoder
 }
 
 type HttpResponse struct {
@@ -45,6 +52,7 @@ type HttpResponse struct {
 func (s *server) Routes(router *mux.Router) {
 	router.HandleFunc("/composer", s.HandleComposerForm())
 	router.HandleFunc("/composer/addphoto", s.HandleAddPhotoForm())
+	router.HandleFunc("/composer/addlocation", s.HandleAddLocationForm())
 	router.HandleFunc("/submit", s.HandleSubmit())
 }
 
@@ -97,8 +105,8 @@ func (s *server) SubmitPost(sessionid, content, h string) HttpResponse {
 		published = usess.ComposerData.Published
 	}
 	formData.Add("published", published)
-	if usess.ComposerData.Location != "" {
-		formData.Add("location", usess.ComposerData.Location)
+	if usess.ComposerData.Location.HasLatLng() {
+		formData.Add("location", usess.ComposerData.Location.ToGeoURL())
 	}
 
 	s.logger.WithFields(logrus.Fields{"request": formData}).Info("built micropub request")
@@ -183,6 +191,90 @@ func (s *server) HandleAddPhotoForm() http.HandlerFunc {
 	}
 }
 
+func (s *server) HandleAddLocationForm() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		cookie, err := r.Cookie("sessionid")
+		if err != nil {
+			s.logger.Infof("redirecting, could not find sessionid cookie")
+			w.Header().Set("Location", "/login")
+			w.WriteHeader(http.StatusSeeOther)
+			return
+		}
+
+		s.logger.Infof("%s", r.RemoteAddr)
+
+		response := HttpResponse{}
+
+		switch r.Method {
+		case "GET":
+			response = s.ShowAddLocationForm(
+				cookie.Value,
+				r.URL.Query().Get("q"),
+			)
+		case "POST":
+			response = s.AddLocation(
+				cookie.Value,
+				r.FormValue("locality"),
+				r.FormValue("region"),
+				r.FormValue("country"),
+				r.FormValue("lat"),
+				r.FormValue("lng"),
+			)
+		}
+
+		for k, v := range response.Headers {
+			w.Header().Set(k, v)
+		}
+		w.WriteHeader(response.StatusCode)
+		w.Write([]byte(response.Body))
+	}
+}
+
+func (s server) AddLocation(sessionid, locality, region, country, lat, lng string) HttpResponse {
+
+	// checkSession
+	usess, err := s.SessionStore.FetchByID(sessionid)
+	if err != nil {
+		return HttpResponse{
+			StatusCode: http.StatusInternalServerError,
+		}
+	}
+	s.logger.WithField("user", usess).
+		Info("logged in user")
+
+	location := session.Location{
+		Locality: locality,
+		Region:   region,
+		Country:  country,
+		Lat:      parseFloat(lat),
+		Lng:      parseFloat(lng),
+	}
+	usess.AddLocation(location)
+
+	err = s.SessionStore.Create(usess)
+	if err != nil {
+		s.logger.WithError(err).Error("failed to save session")
+		return HttpResponse{StatusCode: http.StatusInternalServerError}
+	}
+
+	// redirect
+	headers := map[string]string{
+		"Location": "/composer",
+	}
+	return HttpResponse{
+		StatusCode: http.StatusSeeOther,
+		Headers:    headers,
+	}
+}
+
+func parseFloat(f string) float64 {
+	if s, err := strconv.ParseFloat(f, 64); err == nil {
+		return s
+	}
+	return 0
+}
+
 func (s *server) ShowComposerForm(sessionid string) HttpResponse {
 
 	// fetch session
@@ -220,7 +312,7 @@ func (s *server) ShowComposerForm(sessionid string) HttpResponse {
 		Photos:    usess.ComposerData.Photos,
 		User:      usess.HCard,
 		Published: usess.ComposerData.Published,
-		Location:  usess.ComposerData.Location,
+		Location:  usess.ComposerData.Location.ToGeoURL(),
 	}
 	t.ExecuteTemplate(w, "layout", v)
 
@@ -240,9 +332,45 @@ type UploadedFile struct {
 	File     io.Reader
 }
 
+type GeoURL string
+
+func (url GeoURL) String() string {
+	return string(url)
+}
+
+func (url GeoURL) Lat() float64 {
+	if url.String() == "" {
+		return 0
+	}
+	latlng := strings.Split(
+		strings.TrimLeft(url.String(), "geo:"),
+		",",
+	)
+	flt, err := strconv.ParseFloat(latlng[0], 64)
+	if err != nil {
+		return 0
+	}
+	return flt
+}
+
+func (url GeoURL) Lng() float64 {
+	if url.String() == "" {
+		return 0
+	}
+	latlng := strings.Split(
+		strings.TrimLeft(url.String(), "geo:"),
+		",",
+	)
+	flt, err := strconv.ParseFloat(latlng[1], 64)
+	if err != nil {
+		return 0
+	}
+	return flt
+}
+
 type MediaEndpointResponse struct {
 	URL       string `json:"url"`
-	Location  string `json:"location"`
+	Location  GeoURL `json:"location"`
 	Published string `json:"published"`
 }
 
@@ -273,7 +401,11 @@ func (s *server) AddPhotos(sessionid string, fileList []UploadedFile) HttpRespon
 			Info("media endpoint response")
 
 		// add uploaded photos + errors to session
-		usess.AddPhotoUpload(res.URL, res.Published, res.Location)
+		location := session.Location{
+			Lat: res.Location.Lat(),
+			Lng: res.Location.Lng(),
+		}
+		usess.AddPhotoUpload(res.URL, res.Published, location)
 		err = s.SessionStore.Create(usess)
 		if err != nil {
 			s.logger.WithError(err).Error("failed to save session")
@@ -432,6 +564,54 @@ func (s *server) ShowAddPhotoForm(sessionid string) HttpResponse {
 		PageTitle string
 	}{
 		PageTitle: "Add Photo",
+	}
+	t.ExecuteTemplate(w, "layout", v)
+
+	headers := map[string]string{
+		"Content-Type": "text/html; charset=UTF-8",
+	}
+
+	return HttpResponse{
+		StatusCode: http.StatusOK,
+		Body:       w.String(),
+		Headers:    headers,
+	}
+}
+
+func (s *server) ShowAddLocationForm(sessionid, locationQuery string) HttpResponse {
+
+	// checkSession
+	usess, err := s.SessionStore.FetchByID(sessionid)
+	if err != nil {
+		return HttpResponse{
+			StatusCode: http.StatusInternalServerError,
+			Body:       err.Error(),
+		}
+	}
+	s.logger.WithFields(logrus.Fields{"user": usess}).Info("logged in user")
+
+	locations := s.geocoder.Lookup(locationQuery)
+
+	// render
+	t, err := template.ParseFiles(
+		"view/components.html",
+		"view/layout.html",
+		"view/addlocation.html",
+	)
+	if err != nil {
+		return HttpResponse{
+			StatusCode: http.StatusInternalServerError,
+			Body:       err.Error(),
+		}
+	}
+
+	w := new(bytes.Buffer)
+	v := struct {
+		PageTitle string
+		Locations []session.Location
+	}{
+		PageTitle: "Add Location",
+		Locations: locations,
 	}
 	t.ExecuteTemplate(w, "layout", v)
 

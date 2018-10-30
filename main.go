@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/gorilla/mux"
+	"github.com/j4y_funabashi/inari-admin/pkg/google"
 	"github.com/j4y_funabashi/inari-admin/pkg/indieauth"
 	"github.com/j4y_funabashi/inari-admin/pkg/login"
 	"github.com/j4y_funabashi/inari-admin/pkg/micropub"
@@ -33,6 +34,10 @@ func main() {
 	authClient := indieauth.NewClient("", sstore, logger)
 	mpClient := micropub.NewClient(logger)
 
+	geoAPIKey := os.Getenv("GEO_API_KEY")
+	geoBaseURL := os.Getenv("GEO_BASE_URL")
+	geoCoder := google.NewGeocoder(geoAPIKey, geoBaseURL, logger)
+
 	// servers
 	loginServer := login.NewServer(
 		logger,
@@ -42,7 +47,7 @@ func main() {
 	)
 	loginServer.Routes(router)
 
-	micropubClientServer := micropub.NewServer(logger, sstore, mpClient)
+	micropubClientServer := micropub.NewServer(logger, sstore, mpClient, geoCoder)
 	micropubClientServer.Routes(router)
 
 	logger.Info("server running on port " + port)

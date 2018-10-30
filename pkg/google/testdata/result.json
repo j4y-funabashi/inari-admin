@@ -1,0 +1,64 @@
+{
+   "results" : [
+      {
+         "address_components" : [
+            {
+               "long_name" : "Meanwood",
+               "short_name" : "Meanwood",
+               "types" : [ "political", "sublocality", "sublocality_level_1" ]
+            },
+            {
+               "long_name" : "Leeds",
+               "short_name" : "Leeds",
+               "types" : [ "postal_town" ]
+            },
+            {
+               "long_name" : "West Yorkshire",
+               "short_name" : "West Yorkshire",
+               "types" : [ "administrative_area_level_2", "political" ]
+            },
+            {
+               "long_name" : "England",
+               "short_name" : "England",
+               "types" : [ "administrative_area_level_1", "political" ]
+            },
+            {
+               "long_name" : "United Kingdom",
+               "short_name" : "GB",
+               "types" : [ "country", "political" ]
+            }
+         ],
+         "formatted_address" : "Meanwood, Leeds, UK",
+         "geometry" : {
+            "bounds" : {
+               "northeast" : {
+                  "lat" : 53.842944,
+                  "lng" : -1.554104
+               },
+               "southwest" : {
+                  "lat" : 53.8238484,
+                  "lng" : -1.5780402
+               }
+            },
+            "location" : {
+               "lat" : 53.8324973,
+               "lng" : -1.5698563
+            },
+            "location_type" : "APPROXIMATE",
+            "viewport" : {
+               "northeast" : {
+                  "lat" : 53.842944,
+                  "lng" : -1.554104
+               },
+               "southwest" : {
+                  "lat" : 53.8238484,
+                  "lng" : -1.5780402
+               }
+            }
+         },
+         "place_id" : "ChIJNZn9I0NZeUgRkZqq9J_5DCY",
+         "types" : [ "political", "sublocality", "sublocality_level_1" ]
+      }
+   ],
+   "status" : "OK"
+}

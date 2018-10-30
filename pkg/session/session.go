@@ -44,18 +44,43 @@ type UserSession struct {
 }
 
 type MediaUpload struct {
-	URL       string `json:"url"`
-	Published string `json:"published"`
-	Location  string `json:"location"`
+	URL       string   `json:"url"`
+	Published string   `json:"published"`
+	Location  Location `json:"location"`
 }
 
 type ComposerData struct {
 	Photos    []MediaUpload `json:"photos"`
 	Published string
-	Location  string
+	Location  Location
 }
 
-func (usess *UserSession) AddPhotoUpload(url, pub, loc string) {
+type Location struct {
+	Lat      float64 `json:"lat"`
+	Lng      float64 `json:"lng"`
+	Locality string  `json:"locality"`
+	Region   string  `json:"region"`
+	Country  string  `json:"country"`
+}
+
+func (loc Location) HasLatLng() bool {
+	if loc.Lat != 0 && loc.Lng != 0 {
+		return true
+	}
+	return false
+}
+
+func (loc Location) ToGeoURL() string {
+	return fmt.Sprintf("geo:%v,%v", loc.Lat, loc.Lng)
+}
+
+func (usess *UserSession) AddLocation(loc Location) {
+	if loc.HasLatLng() {
+		usess.ComposerData.Location = loc
+	}
+}
+
+func (usess *UserSession) AddPhotoUpload(url, pub string, loc Location) {
 	usess.ComposerData.Photos = append(
 		usess.ComposerData.Photos,
 		MediaUpload{
@@ -67,7 +92,7 @@ func (usess *UserSession) AddPhotoUpload(url, pub, loc string) {
 	if pub != "" {
 		usess.ComposerData.Published = pub
 	}
-	if loc != "" {
+	if loc.HasLatLng() {
 		usess.ComposerData.Location = loc
 	}
 }

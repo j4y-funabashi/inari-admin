@@ -1,0 +1,28 @@
+{{ define "content" }}
+
+<div>
+    <a href="/composer">back</a>
+    <h1>{{ .PageTitle }}</h1>
+</div>
+
+<form method="get" action="/composer/addlocation">
+    <label for="q">Search for a city, coutry</label>
+    <input id="q" type="text" name="q" class='{{ template "input-text" }}' placeholder="City, Country" required autofocus />
+</form>
+
+<ul>
+{{ range .Locations }}
+<li>
+<form action="/composer/addlocation" method="post">
+    <input type="hidden" name="locality" value="{{ .Locality }}" />
+    <input type="hidden" name="region" value="{{ .Region }}" />
+    <input type="hidden" name="country" value="{{ .Country }}" />
+    <input type="hidden" name="lat" value="{{ .Lat }}" />
+    <input type="hidden" name="lng" value="{{ .Lng }}" />
+    <input class='{{ template "btn-cta" }}' type="submit" value="{{ .Locality }}, {{ .Region }}, {{ .Country }}">
+</form>
+</li>
+{{ end }}
+</ul>
+
+{{ end }}

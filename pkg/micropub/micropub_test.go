@@ -42,6 +42,13 @@ func (sstore mockSessionStore) FetchByID(postID string) (session.UserSession, er
 	return sstore.fetchByIDResponse(postID)
 }
 
+type mockGeocoder struct {
+}
+
+func (mc mockGeocoder) Lookup(address string) []session.Location {
+	return []session.Location{}
+}
+
 func TestAddPhotos(t *testing.T) {
 
 	is := is.NewRelaxed(t)
@@ -50,13 +57,16 @@ func TestAddPhotos(t *testing.T) {
 		{
 			URL:       "https://example.com/1.jpg",
 			Published: "2010-01-28",
-			Location:  "leeds",
+			Location: session.Location{
+				Lat: 36.6392414,
+				Lng: -4.7088308999722,
+			},
 		},
 	}
 	mediaResponse := micropub.MediaEndpointResponse{
 		URL:       "https://example.com/1.jpg",
 		Published: "2010-01-28",
-		Location:  "leeds",
+		Location:  "geo:36.6392414,-4.7088308999722",
 	}
 
 	var tests = []struct {
@@ -74,17 +84,13 @@ func TestAddPhotos(t *testing.T) {
 			},
 			createResponse: func(usess session.UserSession) error {
 
-				if len(usess.ComposerData.Photos) != len(expectedPhotos) {
-					t.Errorf("session should contain %d photo, found %d", len(expectedPhotos), len(usess.ComposerData.Photos))
-				}
+				is.Equal(len(usess.ComposerData.Photos), len(expectedPhotos))
 
 				for key, photo := range usess.ComposerData.Photos {
-					if expectedPhotos[key] != photo {
-						t.Errorf("expected photo %d to be %+v got %+v", key, expectedPhotos[key], photo)
-					}
+					is.Equal(expectedPhotos[key], photo)
 				}
 				is.Equal(usess.ComposerData.Published, "2010-01-28")
-				is.Equal(usess.ComposerData.Location, "leeds")
+				is.Equal(usess.ComposerData.Location, session.Location{Lat: 36.6392414, Lng: -4.7088308999722})
 
 				return nil
 			},
@@ -108,9 +114,10 @@ func TestAddPhotos(t *testing.T) {
 			mpClient := mockClient{
 				uploadResponse: tt.uploadResponse,
 			}
+			geoCoder := mockGeocoder{}
 			sessionID := "1234"
 
-			mpServer := micropub.NewServer(logger, sstore, mpClient)
+			mpServer := micropub.NewServer(logger, sstore, mpClient, geoCoder)
 			res := mpServer.AddPhotos(sessionID, tt.fileList)
 
 			is.Equal(res, tt.expected)
@@ -188,7 +195,7 @@ func TestUploadToMediaServer(t *testing.T) {
 			},
 			expectedResponse: micropub.MediaEndpointResponse{
 				URL:       "http://example.com/test.jpg",
-				Location:  "leeds",
+				Location:  "geo:36.6392414,-4.7088308999722",
 				Published: "2010-01-28 10:00:00",
 			},
 			expectedErr: nil,
@@ -209,7 +216,7 @@ func TestUploadToMediaServer(t *testing.T) {
 					Location  string `json:"location"`
 				}{
 					Published: "2010-01-28 10:00:00",
-					Location:  "leeds",
+					Location:  "geo:36.6392414,-4.7088308999722",
 				}
 				json.NewEncoder(w).Encode(jsonres)
 			}))
@@ -257,11 +264,17 @@ func TestSubmitPost(t *testing.T) {
 							{URL: "http://example.com/3.jpg"},
 						},
 						Published: "2018-01-28T10:47:54+01:00",
-						Location:  "leedz",
+						Location: session.Location{
+							Lat: 36.6392414,
+							Lng: -4.7088308999722,
+						},
 					},
 				}, nil
 			},
-			expected: micropub.HttpResponse{},
+			expected: micropub.HttpResponse{
+				StatusCode: 303,
+				Headers:    map[string]string{"Location": "/composer"},
+			},
 			sendRequest: func(body url.Values, endpoint, bearerToken string) (micropub.MicropubEndpointResponse, error) {
 				is.Equal("hellchicken content", body.Get("content"))
 				is.Equal("entry", body.Get("h"))
@@ -272,7 +285,7 @@ func TestSubmitPost(t *testing.T) {
 				is.Equal(body["photo"][1], "http://example.com/2.jpg")
 				is.Equal(body["photo"][2], "http://example.com/3.jpg")
 				is.Equal(body.Get("published"), "2018-01-28T10:47:54+01:00")
-				is.Equal(body.Get("location"), "leedz")
+				is.Equal(body.Get("location"), "geo:36.6392414,-4.7088308999722")
 
 				return micropub.MicropubEndpointResponse{}, nil
 			},
@@ -290,12 +303,13 @@ func TestSubmitPost(t *testing.T) {
 				fetchByIDResponse: tt.fetchByIDResponse,
 			}
 			mpClient := mockClient{sendRequest: tt.sendRequest}
+			geoCoder := mockGeocoder{}
 			sessionID := "1234"
-			mpServer := micropub.NewServer(logger, sstore, mpClient)
+			mpServer := micropub.NewServer(logger, sstore, mpClient, geoCoder)
 
 			// act
 			res := mpServer.SubmitPost(sessionID, tt.content, tt.h)
-			t.Errorf("%+v", res)
+			is.Equal(tt.expected, res)
 
 			// assert
 			hook.Reset()

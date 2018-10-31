@@ -50,6 +50,7 @@ type HttpResponse struct {
 }
 
 func (s *server) Routes(router *mux.Router) {
+	router.HandleFunc("/", s.HandleComposerForm())
 	router.HandleFunc("/composer", s.HandleComposerForm())
 	router.HandleFunc("/composer/addphoto", s.HandleAddPhotoForm())
 	router.HandleFunc("/composer/addlocation", s.HandleAddLocationForm())

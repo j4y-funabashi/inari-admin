@@ -47,7 +47,12 @@ func main() {
 	)
 	loginServer.Routes(router)
 
-	micropubClientServer := micropub.NewServer(logger, sstore, mpClient, geoCoder)
+	micropubClientServer := micropub.NewServer(
+		logger,
+		sstore,
+		mpClient,
+		geoCoder,
+	)
 	micropubClientServer.Routes(router)
 
 	logger.Info("server running on port " + port)

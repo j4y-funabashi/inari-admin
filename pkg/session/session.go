@@ -103,10 +103,7 @@ func (usess *UserSession) ClearComposerData() {
 
 func NewUserSession(me, clientId, redirectUri string) (UserSession, error) {
 	p := UserSession{}
-	uid, err := uuid.NewV4()
-	if err != nil {
-		return p, err
-	}
+	uid := uuid.NewV4()
 	p.Uid = uid.String()
 	p.Me = me
 	p.ClientId = clientId

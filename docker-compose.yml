@@ -10,3 +10,9 @@ services:
             CALLBACK_URL: "http://localhost:8090/login-callback"
         ports:
             - 8090:80
+
+    mpserver:
+        build:
+            context: ./mocks/mpserver
+        ports:
+            - 8093:80

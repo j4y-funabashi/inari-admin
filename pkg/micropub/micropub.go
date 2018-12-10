@@ -26,7 +26,12 @@ type GeoCoder interface {
 	Lookup(address string) []session.Location
 }
 
-func NewServer(logger *logrus.Logger, ss session.SessionStore, client MPClient, geocoder GeoCoder) server {
+func NewServer(
+	logger *logrus.Logger,
+	ss session.SessionStore,
+	client MPClient,
+	geocoder GeoCoder,
+) server {
 	s := server{
 		logger:       logger,
 		SessionStore: ss,

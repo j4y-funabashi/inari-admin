@@ -1,9 +1,17 @@
 {{ define "content" }}
 
 <form action="/login-init" method="post">
-    <label for="login">Enter your url to login</label>
-    <input id="login" type="text" name="me" class='{{ template "input-text" }}' placeholder="https://example.com" required autofocus />
-    <input class='{{ template "btn-cta" }}' type="submit" value="Login">
+  <label for="login">Enterz your url to login</label>
+  <input
+    id="login"
+    type="text"
+    name="me"
+    class='{{ template "input-text" }}'
+    placeholder="https://example.com"
+    required
+    autofocus
+  />
+  <input class='{{ template "btn-cta" }}' type="submit" value="Login" />
 </form>
 
 {{ end }}

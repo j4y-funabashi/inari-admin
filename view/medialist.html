@@ -1,0 +1,23 @@
+{{ define "content" }}
+
+<div>
+  <h1>{{ .PageTitle }}</h1>
+</div>
+
+<div>
+  {{ range .MediaList }}
+
+  <div
+    style="display:inline-block;width:150px;height:150px;background-color:#e9e9e9;"
+  >
+    <a href="/composer/media/?url={{ .URL }}">
+      <img
+        src="https://imgproxy.funabashi.co.uk/insecure/fill/150/150/ce/0/plain/{{ .URL }}"
+      />
+    </a>
+  </div>
+
+  {{ end }}
+</div>
+
+{{ end }}

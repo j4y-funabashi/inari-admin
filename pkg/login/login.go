@@ -79,12 +79,6 @@ func (s *server) HandleLoginCallback() http.HandlerFunc {
 func (s *server) HandleLoginInit() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		err := r.ParseForm()
-		if err != nil {
-			s.logger.WithError(err).Error("failed to parse form")
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
 		me := r.FormValue("me")
 
 		response := s.InitLogin(me)

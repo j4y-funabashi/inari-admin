@@ -18,16 +18,18 @@ func main() {
 	// config
 	port := "80"
 	region := "eu-central-1"
-	bucket := "admin.funabashi.co.uk"
-	clientID := "https://admin.funabashi.co.uk"
+	sessionBucket := os.Getenv("SESSION_BUCKET")
+	clientID := os.Getenv("CLIENT_ID")
 	redirectURL := os.Getenv("CALLBACK_URL")
 
 	// deps
 	logger := log.New()
 	logger.Formatter = &log.JSONFormatter{}
-	router := mux.NewRouter()
 
-	sstore, err := session.NewS3SessionStore(region, bucket)
+	router := mux.NewRouter()
+	router.Use(newLoggerMiddleware(logger))
+
+	sstore, err := session.NewS3SessionStore(region, sessionBucket)
 	if err != nil {
 		logger.WithError(err).Fatal("failed to create session store")
 	}
@@ -56,5 +58,21 @@ func main() {
 	micropubClientServer.Routes(router)
 
 	logger.Info("server running on port " + port)
-	logger.Fatal(http.ListenAndServe(":"+port, router))
+
+	logger.Fatal(http.ListenAndServe(
+		":"+port,
+		router,
+	))
+}
+
+func newLoggerMiddleware(logger *log.Logger) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			logger.
+				WithField("path", r.RequestURI).
+				WithField("method", r.Method).
+				Debug("received request")
+			next.ServeHTTP(w, r)
+		})
+	}
 }

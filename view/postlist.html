@@ -1,0 +1,52 @@
+{{ define "content" }}
+
+<div>
+  <h1>{{ .PageTitle }}</h1>
+</div>
+
+<div>
+  {{ range .PostList }}
+
+  <div class="bb b--black-20 pv2 black-80" style="word-wrap: break-word;">
+    <div>
+      {{ with .LikeOf }} {{ range $LikeOf := . }}
+      <div><a href="{{ $LikeOf }}" class="u-like-of">{{ $LikeOf }} </a></div>
+      {{ end }} {{ end }}
+    </div>
+
+    <div>
+      {{ .Content }}
+    </div>
+
+    <div>
+      {{ with .Category }} {{ range $Category := . }}
+      <a href="/category/{{ $Category }}" class="u-category"
+        >#{{ $Category }}</a
+      >
+      {{ end }} {{ end }}
+    </div>
+
+    <div>
+      {{ if .Location }} {{ .Location }} {{ end }}
+    </div>
+
+    <div>
+      <a href="{{ .Url }}">{{ .Published }}</a>
+    </div>
+  </div>
+
+  {{ end }}
+</div>
+
+<div>
+  <ul style="text-align:center; list-style: none;">
+    <li>Mar 2019</li>
+    <li>Feb 2019</li>
+    <li>Jan 2019</li>
+    <li>2018</li>
+    <li>2017</li>
+    <li>2016</li>
+  </ul>
+</div>
+
+{{ end }}

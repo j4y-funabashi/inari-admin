@@ -241,7 +241,7 @@ func (usess *UserSession) discoverMediaEndpoint() {
 	if err != nil {
 		return
 	}
-	config, err := fetchMicropubConfig(configUrl)
+	config, err := fetchMicropubConfig(configUrl, usess.AccessToken)
 	if err != nil {
 		log.Printf("failed to fetch micropub config: %v", err)
 		return
@@ -264,12 +264,22 @@ type MicropubConfig struct {
 	MediaEndpoint string `json:"media-endpoint"`
 }
 
-func fetchMicropubConfig(configUrl string) (MicropubConfig, error) {
+func fetchMicropubConfig(configUrl, accessToken string) (MicropubConfig, error) {
 	config := MicropubConfig{}
-	resp, err := http.Get(configUrl)
+
+	req, err := http.NewRequest("GET", configUrl, nil)
 	if err != nil {
 		return config, err
 	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+
+	// perform request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return config, err
+	}
+
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {

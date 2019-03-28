@@ -9,6 +9,7 @@ services:
         environment:
             CALLBACK_URL: "http://localhost:8090/login-callback"
             CLIENT_ID: "http://okami.funabashi.co.uk"
+            SESSION_BUCKET: "admin.funabashi.co.uk"
         ports:
             - 8090:80
 

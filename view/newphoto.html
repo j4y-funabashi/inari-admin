@@ -1,16 +1,37 @@
 {{ define "content" }}
 
 <div>
-    <a href="/composer">back</a>
-    <h1>{{ .PageTitle }}</h1>
+  <a href="/composer">back</a>
+  <a href="/composer/media/device">Device</a>
+  <a href="/composer/media/gallery">Gallery</a>
+  <h1>{{ .PageTitle }}</h1>
 </div>
 
 <form method="post" action="/composer/addphoto" enctype="multipart/form-data">
-    <input id="photo-upload" type="file" accept="image/*" name="photo" class="input-reset ma1" required>
-    <input id="photo-upload" type="file" accept="image/*" name="photo" class="input-reset ma1">
-    <input id="photo-upload" type="file" accept="image/*" name="photo" class="input-reset ma1">
-    <button type="submit" class='{{ template "btn-cta" }}'>Preview</button>
-    <input type="hidden" name="h" value="entry" />
+  <input
+    id="photo-upload"
+    type="file"
+    accept="image/*"
+    name="photo"
+    class="input-reset ma1"
+    required
+  />
+  <input
+    id="photo-upload"
+    type="file"
+    accept="image/*"
+    name="photo"
+    class="input-reset ma1"
+  />
+  <input
+    id="photo-upload"
+    type="file"
+    accept="image/*"
+    name="photo"
+    class="input-reset ma1"
+  />
+  <button type="submit" class='{{ template "btn-cta" }}'>Preview</button>
+  <input type="hidden" name="h" value="entry" />
 </form>
 
 {{ end }}

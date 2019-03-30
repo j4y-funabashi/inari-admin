@@ -130,12 +130,13 @@ func (params *UserSession) BuildAuthRedirectUrl() (string, error) {
 }
 
 func (usess *UserSession) DiscoverEndpoints() error {
+
+	// fetch and parse me url
 	resp, err := http.Get(usess.Me)
 	if err != nil {
 		log.Printf("failed to GET [%s][%s]", usess.Me, err.Error())
 		return err
 	}
-
 	if resp.StatusCode != http.StatusOK {
 		log.Printf("URL returned a non-200: [%s][%d]", usess.Me, resp.StatusCode)
 		return fmt.Errorf("URL returned a non-200")
@@ -146,13 +147,13 @@ func (usess *UserSession) DiscoverEndpoints() error {
 		return fmt.Errorf("failed to parse HTML [%s][%s]", usess.Me, err.Error())
 	}
 
+	// find auth, token and micropub endpoints
 	usess.AuthorizationEndpoint = findEndpoint(doc, "authorization_endpoint", resp.Header)
 	if usess.AuthorizationEndpoint == "" {
 		return fmt.Errorf("failed to find authorization_endpoint")
 	}
 	usess.TokenEndpoint = findEndpoint(doc, "token_endpoint", resp.Header)
 	usess.MicropubEndpoint = findEndpoint(doc, "micropub", resp.Header)
-	usess.discoverMediaEndpoint()
 
 	// try to find h-card
 	usess.HCard = discoverHcard(usess.Me)
@@ -232,7 +233,7 @@ func sliceContains(slice []string, value string) bool {
 	return false
 }
 
-func (usess *UserSession) discoverMediaEndpoint() {
+func (usess *UserSession) DiscoverMediaEndpoint() {
 	usess.MediaEndpoint = ""
 	if usess.MicropubEndpoint == "" {
 		return

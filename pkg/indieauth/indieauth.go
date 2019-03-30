@@ -189,7 +189,8 @@ func (client client) Callback(state, code, clientId, redirectUri string) Respons
 	log.Printf("user session: %+v", s)
 
 	// AUTHORIZATION CODE VERIFICATION
-	// BUILD POST REQ
+
+	// build post req
 	httpclient := &http.Client{}
 	data := url.Values{}
 	data.Set("grant_type", "authorization_code")
@@ -205,6 +206,8 @@ func (client client) Callback(state, code, clientId, redirectUri string) Respons
 	}
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	// perform verification request
 	resp, err := httpclient.Do(req)
 	if err != nil {
 		log.Printf("failed to POST to TokenEndpoint: [%s][%+v]", s.TokenEndpoint, err)
@@ -216,6 +219,8 @@ func (client client) Callback(state, code, clientId, redirectUri string) Respons
 		res.StatusCode = http.StatusForbidden
 		return res
 	}
+
+	// parse verification response
 	log.Printf("verify code response: %+v", resp)
 	body, err := ioutil.ReadAll(resp.Body)
 	defer resp.Body.Close()
@@ -237,6 +242,9 @@ func (client client) Callback(state, code, clientId, redirectUri string) Respons
 
 	s.AccessToken = verifyRes.AccessToken
 	s.TokenType = verifyRes.TokenType
+	s.DiscoverMediaEndpoint()
+
+	// save session
 	err = client.SessionStore.Create(s)
 	if err != nil {
 		log.Printf("failed to save session: %+v", err)
@@ -244,6 +252,7 @@ func (client client) Callback(state, code, clientId, redirectUri string) Respons
 		return res
 	}
 
+	// drop cookie and redirect
 	cookie := fmt.Sprintf("sessionid=%s; Path=/", s.Uid)
 	headers := map[string]string{
 		"Location":   "/composer",

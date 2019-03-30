@@ -8,7 +8,7 @@
 <div>
   <img
     class="v-mid"
-    src="http://165.227.131.254:8080/35x35/{{ .User.Photo }}"
+    src="https://imgproxy.funabashi.co.uk/insecure/fill/35/35/ce/0/plain/{{ .User.Photo }}"
   />
   <span class="v-mid">{{ .User.Name }}</span>
 </div>
@@ -27,7 +27,9 @@
   <input type="hidden" name="h" value="entry" />
 
   {{ range .Photos }}
-  <img src="http://165.227.131.254:8080/75x75/{{ .URL }}" />
+  <img
+    src="https://imgproxy.funabashi.co.uk/insecure/fill/75/75/ce/0/plain/{{ .URL }}"
+  />
   {{ end }}
 
   <ul>

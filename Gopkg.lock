@@ -54,14 +54,6 @@
   version = "v1.1.1"
 
 [[projects]]
-  digest = "1:664d37ea261f0fc73dd17f4a1f5f46d01fbb0b0d75f6375af064824424109b7d"
-  name = "github.com/gorilla/handlers"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "7e0847f9db758cdebd26c149d0ae9d5d0b9c98ce"
-  version = "v1.4.0"
-
-[[projects]]
   digest = "1:e73f5b0152105f18bc131fba127d9949305c8693f8a762588a82a48f61756f5f"
   name = "github.com/gorilla/mux"
   packages = ["."]
@@ -85,12 +77,20 @@
   version = "v1.0.1"
 
 [[projects]]
-  digest = "1:044c8b8d1c1d5ab5145c7efeec3c1c200f8dddb49f590c87911231ae50ed6d8c"
-  name = "github.com/matryer/is"
+  digest = "1:4a49346ca45376a2bba679ca0e83bec949d780d4e927931317904bad482943ec"
+  name = "github.com/mattn/go-sqlite3"
   packages = ["."]
   pruneopts = "UT"
-  revision = "7c2b2736b653cb467f577a637187a236e770455f"
-  version = "v1.2.0"
+  revision = "c7c4067b79cc51e6dfdcef5c702e74b1e0fa7c75"
+  version = "v1.10.0"
+
+[[projects]]
+  digest = "1:6ff1026b8d873d074ddec82ad60bb0eb537dc013f456ef26b63d30beba2f99e7"
+  name = "github.com/microcosm-cc/bluemonday"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "506f3da9b7c86d737e91f16b7431df8635871552"
+  version = "v1.0.2"
 
 [[projects]]
   digest = "1:274f67cb6fed9588ea2521ecdac05a6d62a8c51c074c1fccc6a49a40ba80e925"
@@ -101,12 +101,9 @@
   version = "v1.2.0"
 
 [[projects]]
-  digest = "1:05aaa4aafcc339843489e731d3b223efc537bbf2eddbb57ded586064baaee260"
+  digest = "1:69b1cc331fca23d702bd72f860c6a647afd0aa9fcbc1d0659b1365e26546dd70"
   name = "github.com/sirupsen/logrus"
-  packages = [
-    ".",
-    "hooks/test",
-  ]
+  packages = ["."]
   pruneopts = "UT"
   revision = "bcd833dfe83d3cebad139e4a29ed79cb2318bf95"
   version = "v1.2.0"
@@ -165,12 +162,11 @@
     "github.com/aws/aws-sdk-go/aws/session",
     "github.com/aws/aws-sdk-go/service/s3",
     "github.com/aws/aws-sdk-go/service/s3/s3manager",
-    "github.com/gorilla/handlers",
     "github.com/gorilla/mux",
-    "github.com/matryer/is",
+    "github.com/mattn/go-sqlite3",
+    "github.com/microcosm-cc/bluemonday",
     "github.com/satori/go.uuid",
     "github.com/sirupsen/logrus",
-    "github.com/sirupsen/logrus/hooks/test",
     "github.com/tomnomnom/linkheader",
     "golang.org/x/net/html",
     "willnorris.com/go/microformats",

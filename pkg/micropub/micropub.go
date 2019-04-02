@@ -22,6 +22,7 @@ type MPClient interface {
 	UploadToMediaServer(uploadedFile UploadedFile, usess session.UserSession) (MediaEndpointResponse, error)
 	SendRequest(body url.Values, endpoint, bearerToken string) (MicropubEndpointResponse, error)
 	QueryPostList(micropubEndpoint, accessToken string) (mf2.PostList, error)
+	QueryMediaList(mediaEndpoint, accessToken string) (MediaQueryListResponse, error)
 }
 
 type GeoCoder interface {
@@ -85,39 +86,17 @@ func (s *server) HandleQueryMedia() http.HandlerFunc {
 		}
 		s.logger.WithField("user", usess).Info("logged in user")
 
-		// query media endpoint
-		s.logger.WithField("media_endpoint", usess.MediaEndpoint).Info("Querying media endpoint")
-		req, err := http.NewRequest("GET", usess.MediaEndpoint+"?q=source", nil)
+		mediaResponse, err := s.client.QueryMediaList(
+			usess.MediaEndpoint,
+			usess.AccessToken,
+		)
 		if err != nil {
-			s.logger.WithError(err).Error("failed to create GET request")
+			s.logger.WithError(err).Info("failed to query media list")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		req.Header.Set("Authorization", "Bearer "+usess.AccessToken)
-		client := &http.Client{}
-		resp, err := client.Do(req)
-		if err != nil {
-			s.logger.WithError(err).Error("failed to perform GET request")
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		respBody := &bytes.Buffer{}
-		_, err = respBody.ReadFrom(resp.Body)
-		if err != nil {
-			s.logger.WithError(err).Error("failed to read GET request body")
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		var mediaResponse mediaQueryListResponse
-		decoder := json.NewDecoder(respBody)
-		decoder.Decode(&mediaResponse)
-
-		s.logger.Infof("%+v", mediaResponse)
-
-		// render
+		// TODO template.RenderMediaList
 		t, err := template.ParseFiles(
 			"view/components.html",
 			"view/layout.html",
@@ -128,7 +107,6 @@ func (s *server) HandleQueryMedia() http.HandlerFunc {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-
 		outBuf := new(bytes.Buffer)
 		v := struct {
 			PageTitle string
@@ -145,7 +123,7 @@ func (s *server) HandleQueryMedia() http.HandlerFunc {
 	}
 }
 
-type mediaQueryListResponse struct {
+type MediaQueryListResponse struct {
 	Items []mediaQueryListResponseItem `json:"items"`
 }
 type mediaQueryListResponseItem struct {
@@ -676,6 +654,45 @@ func (s *server) ShowComposerForm(sessionid string) HttpResponse {
 		Body:       w.String(),
 		Headers:    headers,
 	}
+}
+
+func (mpclient Client) QueryMediaList(mediaEndpoint, accessToken string) (MediaQueryListResponse, error) {
+	var mediaResponse MediaQueryListResponse
+
+	mpclient.logger.WithField(
+		"media_endpoint",
+		mediaEndpoint,
+	).Info("Querying media endpoint")
+
+	req, err := http.NewRequest("GET", mediaEndpoint+"?q=source", nil)
+	if err != nil {
+		mpclient.logger.WithError(err).Error("failed to create GET request")
+		return mediaResponse, err
+	}
+
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		mpclient.logger.WithError(err).Error("failed to perform GET request")
+		return mediaResponse, err
+	}
+	respBody := &bytes.Buffer{}
+	_, err = respBody.ReadFrom(resp.Body)
+	if err != nil {
+		mpclient.logger.WithError(err).Error("failed to read GET response")
+		return mediaResponse, err
+	}
+
+	decoder := json.NewDecoder(respBody)
+	err = decoder.Decode(&mediaResponse)
+	if err != nil {
+		mpclient.logger.WithError(err).Error("failed to decode json body")
+		return mediaResponse, err
+	}
+	mpclient.logger.Infof("%+v", mediaResponse)
+
+	return mediaResponse, nil
 }
 
 func (mpclient Client) QueryPostList(micropubEndpoint, accessToken string) (mf2.PostList, error) {

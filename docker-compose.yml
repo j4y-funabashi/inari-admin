@@ -12,9 +12,3 @@ services:
             SESSION_BUCKET: "admin.funabashi.co.uk"
         ports:
             - 8090:80
-
-    mpserver:
-        build:
-            context: ./mocks/mpserver
-        ports:
-            - 8093:80

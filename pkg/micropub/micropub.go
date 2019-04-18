@@ -15,6 +15,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/j4y_funabashi/inari-admin/pkg/mf2"
 	"github.com/j4y_funabashi/inari-admin/pkg/session"
+	"github.com/j4y_funabashi/inari-admin/pkg/view"
 	"github.com/sirupsen/logrus"
 )
 
@@ -23,6 +24,7 @@ type MPClient interface {
 	SendRequest(body url.Values, endpoint, bearerToken string) (MicropubEndpointResponse, error)
 	QueryPostList(micropubEndpoint, accessToken string) (mf2.PostList, error)
 	QueryMediaList(mediaEndpoint, accessToken string) (MediaQueryListResponse, error)
+	QueryMediaURL(URL, mediaEndpoint, accessToken string) (MediaQueryListResponseItem, error)
 }
 
 type GeoCoder interface {
@@ -61,6 +63,7 @@ func (s *server) Routes(router *mux.Router) {
 	router.HandleFunc("/composer", s.HandleComposerForm())
 	router.HandleFunc("/composer/addlocation", s.HandleAddLocationForm())
 	router.HandleFunc("/submit", s.HandleSubmit())
+	router.HandleFunc("/composer/media", s.HandleAddMediaToComposer()).Methods("POST")
 	router.HandleFunc("/composer/media/device", s.HandleAddPhotoForm())
 	router.HandleFunc("/composer/media/gallery", s.HandleQueryMedia())
 	router.HandleFunc("/queryposts", s.HandleQueryPosts())
@@ -86,36 +89,74 @@ func (s *server) HandleQueryMedia() http.HandlerFunc {
 		}
 		s.logger.WithField("user", usess).Info("logged in user")
 
-		mediaResponse, err := s.client.QueryMediaList(
-			usess.MediaEndpoint,
-			usess.AccessToken,
-		)
-		if err != nil {
-			s.logger.WithError(err).Info("failed to query media list")
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		mediaURL := r.URL.Query().Get("url")
 
-		// TODO template.RenderMediaList
-		t, err := template.ParseFiles(
-			"view/components.html",
-			"view/layout.html",
-			"view/medialist.html",
-		)
-		if err != nil {
-			s.logger.WithError(err).Error("failed to parse templat files")
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
 		outBuf := new(bytes.Buffer)
-		v := struct {
-			PageTitle string
-			MediaList []mediaQueryListResponseItem
-		}{
-			PageTitle: "Choose a Video/Photo",
-			MediaList: mediaResponse.Items,
+		if len(mediaURL) > 0 {
+			// fetch media
+			mediaResponse, err := s.client.QueryMediaURL(
+				mediaURL,
+				usess.MediaEndpoint,
+				usess.AccessToken,
+			)
+			if err != nil {
+				s.logger.WithError(err).Info("failed to query media list")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			// render media
+			viewModel := view.MediaItem{
+				URL:      mediaResponse.URL,
+				MimeType: mediaResponse.MimeType,
+				DateTime: mediaResponse.DateTime,
+				Lat:      mediaResponse.Lat,
+				Lng:      mediaResponse.Lng,
+			}
+			err = view.RenderMediaPreview(viewModel, outBuf)
+			if err != nil {
+				s.logger.WithError(err).Error("failed to parse template files")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+		} else {
+			// fetch media list
+			mediaResponse, err := s.client.QueryMediaList(
+				usess.MediaEndpoint,
+				usess.AccessToken,
+			)
+			if err != nil {
+				s.logger.WithError(err).Info("failed to query media list")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			// TODO template.RenderMediaList
+			t, err := template.ParseFiles(
+				"view/components.html",
+				"view/layout.html",
+				"view/medialist.html",
+			)
+			if err != nil {
+				s.logger.WithError(err).Error("failed to parse template files")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			v := struct {
+				PageTitle string
+				MediaList []MediaQueryListResponseItem
+			}{
+				PageTitle: "Choose a Video/Photo",
+				MediaList: mediaResponse.Items,
+			}
+			err = t.ExecuteTemplate(outBuf, "layout", v)
+			if err != nil {
+				s.logger.WithError(err).Error("failed to execute template")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
 		}
-		t.ExecuteTemplate(outBuf, "layout", v)
 
 		w.Header().Set("Content-type", "text/html; charset=UTF-8")
 		w.WriteHeader(http.StatusOK)
@@ -123,12 +164,60 @@ func (s *server) HandleQueryMedia() http.HandlerFunc {
 	}
 }
 
-type MediaQueryListResponse struct {
-	Items []mediaQueryListResponseItem `json:"items"`
+func (s *server) HandleAddMediaToComposer() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		// fetch cookie
+		cookie, err := r.Cookie("sessionid")
+		if err != nil {
+			s.logger.WithError(err).Info("could not find sessionid cookie")
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+
+		// fetch session
+		usess, err := s.SessionStore.FetchByID(cookie.Value)
+		if err != nil {
+			s.logger.WithError(err).Info("could not find session")
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		s.logger.WithField("user", usess).Info("logged in user")
+
+		lat, err := strconv.ParseFloat(r.FormValue("lat"), 64)
+		if err != nil {
+			s.logger.WithError(err).Info("failed to convert lat from string to float")
+		}
+		lng, err := strconv.ParseFloat(r.FormValue("lng"), 64)
+		if err != nil {
+			s.logger.WithError(err).Info("failed to convert lat from string to float")
+		}
+		loc := session.Location{
+			Lat: lat,
+			Lng: lng,
+		}
+		usess.AddPhotoUpload(
+			r.FormValue("url"),
+			r.FormValue("datetime"),
+			loc,
+		)
+		s.SessionStore.Create(usess)
+
+		w.Header().Set("Location", "/composer")
+		w.WriteHeader(http.StatusSeeOther)
+		return
+	}
 }
-type mediaQueryListResponseItem struct {
-	URL      string `json:"url"`
-	MimeType string `json:"mime_type"`
+
+type MediaQueryListResponse struct {
+	Items []MediaQueryListResponseItem `json:"items"`
+}
+type MediaQueryListResponseItem struct {
+	URL      string     `json:"url"`
+	MimeType string     `json:"mime_type"`
+	DateTime *time.Time `json:"date_time"`
+	Lat      float64    `json:"lat"`
+	Lng      float64    `json:"lng"`
 }
 
 func (s *server) HandleQueryPosts() http.HandlerFunc {
@@ -656,15 +745,59 @@ func (s *server) ShowComposerForm(sessionid string) HttpResponse {
 	}
 }
 
-func (mpclient Client) QueryMediaList(mediaEndpoint, accessToken string) (MediaQueryListResponse, error) {
+func (mpclient Client) QueryMediaList(
+	mediaEndpoint,
+	accessToken string,
+) (MediaQueryListResponse, error) {
 	var mediaResponse MediaQueryListResponse
 
-	mpclient.logger.WithField(
-		"media_endpoint",
-		mediaEndpoint,
-	).Info("Querying media endpoint")
+	mpclient.logger.
+		WithField("media_endpoint", mediaEndpoint).
+		Info("Querying media endpoint")
 
 	req, err := http.NewRequest("GET", mediaEndpoint+"?q=source", nil)
+	if err != nil {
+		mpclient.logger.WithError(err).Error("failed to create GET request")
+		return mediaResponse, err
+	}
+
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		mpclient.logger.WithError(err).Error("failed to perform GET request")
+		return mediaResponse, err
+	}
+	respBody := &bytes.Buffer{}
+	_, err = respBody.ReadFrom(resp.Body)
+	if err != nil {
+		mpclient.logger.WithError(err).Error("failed to read GET response")
+		return mediaResponse, err
+	}
+
+	decoder := json.NewDecoder(respBody)
+	err = decoder.Decode(&mediaResponse)
+	if err != nil {
+		mpclient.logger.WithError(err).Error("failed to decode json body")
+		return mediaResponse, err
+	}
+	mpclient.logger.Infof("%+v", mediaResponse)
+
+	return mediaResponse, nil
+}
+
+func (mpclient Client) QueryMediaURL(
+	URL,
+	mediaEndpoint,
+	accessToken string,
+) (MediaQueryListResponseItem, error) {
+	var mediaResponse MediaQueryListResponseItem
+
+	mpclient.logger.
+		WithField("media_endpoint", mediaEndpoint).
+		Info("Querying media endpoint")
+
+	req, err := http.NewRequest("GET", mediaEndpoint+"?q=source&url="+URL, nil)
 	if err != nil {
 		mpclient.logger.WithError(err).Error("failed to create GET request")
 		return mediaResponse, err

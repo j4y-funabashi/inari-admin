@@ -1,0 +1,34 @@
+{{ define "content" }}
+
+<div>
+  <a href="/composer">back</a>
+  <a href="/composer/media/device">Device</a>
+  <a href="/composer/media/gallery">Gallery</a>
+  <h1>{{ .PageTitle }}</h1>
+</div>
+
+<form method="post" action="/composer/media">
+  <img
+    src="https://d22ubqq5wh0gzm.cloudfront.net/insecure/fill/600/600/ce/0/plain/{{ .Media.URL }}"
+  />
+  <input type="hidden" name="url" value="{{ .Media.URL }}" />
+
+  <div>{{ .Media.HumanDate }}</div>
+  <input type="hidden" name="datetime" value="{{ .Media.MachineDate }}" />
+
+  {{ if .Media.HasLocation }}
+  <div>
+    <img
+      src="https://atlas.p3k.io/map/img?marker[]=lat:{{ .Media.Lat }};lng:{{ .Media.Lng }};icon:dot-small-orange&basemap=gray&width=500&height=500&zoom=14"
+    />
+    <input type="hidden" name="lat" value="{{ .Media.Lat }}" />
+    <input type="hidden" name="lng" value="{{ .Media.Lng }}" />
+  </div>
+  {{ end }}
+
+  <button type="submit" class='{{ template "btn-cta" }}'>
+    Add to post
+  </button>
+</form>
+
+{{ end }}

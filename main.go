@@ -17,7 +17,7 @@ func main() {
 
 	// config
 	port := "80"
-	region := "eu-central-1"
+	sessionBucketRegion := "eu-central-1"
 	sessionBucket := os.Getenv("SESSION_BUCKET")
 	clientID := os.Getenv("CLIENT_ID")
 	redirectURL := os.Getenv("CALLBACK_URL")
@@ -29,7 +29,7 @@ func main() {
 	router := mux.NewRouter()
 	router.Use(newLoggerMiddleware(logger))
 
-	sstore, err := session.NewS3SessionStore(region, sessionBucket)
+	sstore, err := session.NewS3SessionStore(sessionBucketRegion, sessionBucket)
 	if err != nil {
 		logger.WithError(err).Fatal("failed to create session store")
 	}

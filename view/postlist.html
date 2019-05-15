@@ -14,6 +14,10 @@
       {{ end }} {{ end }}
     </div>
 
+    {{ with .Photo }} {{ range $Photo := . }}
+    <div><img src="{{ $Photo }}" /></div>
+    {{ end }} {{ end }}
+
     <div>
       {{ .Content }}
     </div>
@@ -36,6 +40,10 @@
   </div>
 
   {{ end }}
+</div>
+
+<div>
+  {{ if .HasPaging }} <a href="?after={{ .AfterKey }}">Load More</a> {{ end }}
 </div>
 
 <div>

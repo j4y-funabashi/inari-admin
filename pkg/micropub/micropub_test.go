@@ -28,7 +28,7 @@ func TestMediaQueryByURL(t *testing.T) {
 			// arrange
 			accessToken := "test-token"
 			URL := "test-url"
-			mediaServer := newMediaServerSingleItem(t)
+			mediaServer := newMediaServerSingleItem(t, getValidMediaItem())
 			mediaEndpoint := mediaServer.URL
 			logger := logrus.New()
 			mpclient := micropub.NewClient(logger)
@@ -50,9 +50,11 @@ func TestMediaQueryByURL(t *testing.T) {
 func TestMediaQueryList(t *testing.T) {
 
 	var tests = []struct {
-		name string
+		name      string
+		mediaList micropub.MediaQueryListResponse
 	}{
-		{"it works"},
+		{name: "it works without paging", mediaList: getValidMediaList()},
+		{name: "it works with paging", mediaList: getValidMediaListWithPaging()},
 	}
 
 	for _, tt := range tests {
@@ -63,19 +65,20 @@ func TestMediaQueryList(t *testing.T) {
 
 			// arrange
 			accessToken := "test-token"
-			mediaServer := newMediaServer(t)
+			afterKey := ""
+			mediaServer := newMediaServer(t, tt.mediaList)
 			mediaEndpoint := mediaServer.URL
 			logger := logrus.New()
 			mpclient := micropub.NewClient(logger)
 
 			// act
-			response, err := mpclient.QueryMediaList(mediaEndpoint, accessToken)
+			response, err := mpclient.QueryMediaList(mediaEndpoint, accessToken, afterKey)
 			if err != nil {
 				t.Errorf("failed to query media list:: %s", err.Error())
 			}
 
 			// assert
-			expected := getValidMediaList()
+			expected := tt.mediaList
 			is.Equal(response, expected)
 		})
 	}
@@ -93,18 +96,34 @@ func getValidMediaList() micropub.MediaQueryListResponse {
 			},
 		}}
 }
+func getValidMediaListWithPaging() micropub.MediaQueryListResponse {
+	paging := micropub.ListPaging{
+		After: "123",
+	}
+	return micropub.MediaQueryListResponse{
+		Items: []micropub.MediaQueryListResponseItem{
+			micropub.MediaQueryListResponseItem{
+				URL: "http://example.com/1",
+			},
+			micropub.MediaQueryListResponseItem{
+				URL: "http://example.com/2",
+			},
+		},
+		Paging: &paging,
+	}
+}
 func getValidMediaItem() micropub.MediaQueryListResponseItem {
 	return micropub.MediaQueryListResponseItem{
 		URL: "http://example.com/1",
 	}
 }
 
-func newMediaServer(t *testing.T) *httptest.Server {
+func newMediaServer(t *testing.T, response micropub.MediaQueryListResponse) *httptest.Server {
 	return httptest.NewServer(
 		http.HandlerFunc(
 			func(w http.ResponseWriter, r *http.Request) {
 
-				response, err := json.Marshal(getValidMediaList())
+				response, err := json.Marshal(response)
 				if err != nil {
 					t.Errorf("Failed to marshall json:: %s", err.Error())
 					http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -124,12 +143,12 @@ func newMediaServer(t *testing.T) *httptest.Server {
 	)
 }
 
-func newMediaServerSingleItem(t *testing.T) *httptest.Server {
+func newMediaServerSingleItem(t *testing.T, response micropub.MediaQueryListResponseItem) *httptest.Server {
 	return httptest.NewServer(
 		http.HandlerFunc(
 			func(w http.ResponseWriter, r *http.Request) {
 
-				response, err := json.Marshal(getValidMediaItem())
+				response, err := json.Marshal(response)
 				if err != nil {
 					t.Errorf("Failed to marshall json:: %s", err.Error())
 					http.Error(w, err.Error(), http.StatusInternalServerError)

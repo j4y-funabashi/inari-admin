@@ -7,20 +7,27 @@
   <h1>{{ .PageTitle }}</h1>
 </div>
 
-<div>
-  {{ range .MediaList }}
+<div class="cf">
+  {{ range .MediaList }} {{ if .IsPublished }}
+  <div class="fl w-third ba bw2 b--red">
+    {{ else }}
+    <div class="fl w-third ba bw2 b--near-white">
+      {{ end }}
 
-  <div
-    style="display:inline-block;width:150px;height:150px;background-color:#e9e9e9;"
-  >
-    <a href="/composer/media/gallery?url={{ .URL }}">
-      <img
-        src="https://d22ubqq5wh0gzm.cloudfront.net/insecure/fill/150/150/ce/0/plain/{{ .URL }}"
-      />
-    </a>
+      <a href="/composer/media/gallery?url={{ .URL }}">
+        <img
+          class="w-100"
+          src="https://d22ubqq5wh0gzm.cloudfront.net/insecure/fill/150/150/ce/0/plain/{{ .URL }}"
+        />
+      </a>
+    </div>
+
+    {{ end }}
+  </div>
+
+  <div>
+    {{ if .HasPaging }} <a href="?after={{ .AfterKey }}">Load More</a> {{ end }}
   </div>
 
   {{ end }}
 </div>
-
-{{ end }}

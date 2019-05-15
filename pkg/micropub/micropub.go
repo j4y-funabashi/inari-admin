@@ -22,8 +22,8 @@ import (
 type MPClient interface {
 	UploadToMediaServer(uploadedFile UploadedFile, usess session.UserSession) (MediaEndpointResponse, error)
 	SendRequest(body url.Values, endpoint, bearerToken string) (MicropubEndpointResponse, error)
-	QueryPostList(micropubEndpoint, accessToken string) (mf2.PostList, error)
-	QueryMediaList(mediaEndpoint, accessToken string) (MediaQueryListResponse, error)
+	QueryPostList(micropubEndpoint, accessToken, afterKey string) (mf2.PostList, error)
+	QueryMediaList(mediaEndpoint, accessToken, afterKey string) (MediaQueryListResponse, error)
 	QueryMediaURL(URL, mediaEndpoint, accessToken string) (MediaQueryListResponseItem, error)
 }
 
@@ -122,9 +122,11 @@ func (s *server) HandleQueryMedia() http.HandlerFunc {
 
 		} else {
 			// fetch media list
+			afterKey := r.URL.Query().Get("after")
 			mediaResponse, err := s.client.QueryMediaList(
 				usess.MediaEndpoint,
 				usess.AccessToken,
+				afterKey,
 			)
 			if err != nil {
 				s.logger.WithError(err).Info("failed to query media list")
@@ -143,12 +145,20 @@ func (s *server) HandleQueryMedia() http.HandlerFunc {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
+
+			if mediaResponse.Paging != nil {
+				afterKey = mediaResponse.Paging.After
+			}
 			v := struct {
 				PageTitle string
 				MediaList []MediaQueryListResponseItem
+				HasPaging bool
+				AfterKey  string
 			}{
 				PageTitle: "Choose a Video/Photo",
 				MediaList: mediaResponse.Items,
+				HasPaging: mediaResponse.Paging != nil,
+				AfterKey:  afterKey,
 			}
 			err = t.ExecuteTemplate(outBuf, "layout", v)
 			if err != nil {
@@ -210,14 +220,19 @@ func (s *server) HandleAddMediaToComposer() http.HandlerFunc {
 }
 
 type MediaQueryListResponse struct {
-	Items []MediaQueryListResponseItem `json:"items"`
+	Items  []MediaQueryListResponseItem `json:"items"`
+	Paging *ListPaging                  `json:"paging,omitempty"`
 }
 type MediaQueryListResponseItem struct {
-	URL      string     `json:"url"`
-	MimeType string     `json:"mime_type"`
-	DateTime *time.Time `json:"date_time"`
-	Lat      float64    `json:"lat"`
-	Lng      float64    `json:"lng"`
+	URL         string     `json:"url"`
+	MimeType    string     `json:"mime_type"`
+	DateTime    *time.Time `json:"date_time"`
+	Lat         float64    `json:"lat"`
+	Lng         float64    `json:"lng"`
+	IsPublished bool       `json:"is_published"`
+}
+type ListPaging struct {
+	After string `json:"after"`
 }
 
 func (s *server) HandleQueryPosts() http.HandlerFunc {
@@ -241,18 +256,21 @@ func (s *server) HandleQueryPosts() http.HandlerFunc {
 		s.logger.WithField("user", usess).Info("logged in user")
 
 		// query post list
-		postList, err := s.client.QueryPostList(usess.MicropubEndpoint, usess.AccessToken)
+		afterKey := r.URL.Query().Get("after")
+		postList, err := s.client.QueryPostList(usess.MicropubEndpoint, usess.AccessToken, afterKey)
 		if err != nil {
 			s.logger.WithError(err).Info("failed to query postlist")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		s.logger.Infof("%+v", postList)
 
 		// transform mf2 to jf2
 		var postListView []mf2.MicroFormatView
 		for _, postmf := range postList.Items {
 			postListView = append(postListView, postmf.ToView())
+		}
+		if postList.Paging != nil {
+			afterKey = postList.Paging.After
 		}
 
 		// render
@@ -271,9 +289,13 @@ func (s *server) HandleQueryPosts() http.HandlerFunc {
 		v := struct {
 			PageTitle string
 			PostList  []mf2.MicroFormatView
+			HasPaging bool
+			AfterKey  string
 		}{
 			PageTitle: "LATEST POSTS",
 			PostList:  postListView,
+			HasPaging: postList.Paging != nil,
+			AfterKey:  afterKey,
 		}
 		t.ExecuteTemplate(outBuf, "layout", v)
 
@@ -747,15 +769,23 @@ func (s *server) ShowComposerForm(sessionid string) HttpResponse {
 
 func (mpclient Client) QueryMediaList(
 	mediaEndpoint,
-	accessToken string,
+	accessToken,
+	afterKey string,
 ) (MediaQueryListResponse, error) {
 	var mediaResponse MediaQueryListResponse
 
+	mpURL := ""
+	if afterKey == "" {
+		mpURL = mediaEndpoint + "?q=source&limit=15"
+	} else {
+		mpURL = mediaEndpoint + "?q=source&limit=15&after=" + afterKey
+	}
+
 	mpclient.logger.
-		WithField("media_endpoint", mediaEndpoint).
+		WithField("media_endpoint", mpURL).
 		Info("Querying media endpoint")
 
-	req, err := http.NewRequest("GET", mediaEndpoint+"?q=source", nil)
+	req, err := http.NewRequest("GET", mpURL, nil)
 	if err != nil {
 		mpclient.logger.WithError(err).Error("failed to create GET request")
 		return mediaResponse, err
@@ -781,7 +811,6 @@ func (mpclient Client) QueryMediaList(
 		mpclient.logger.WithError(err).Error("failed to decode json body")
 		return mediaResponse, err
 	}
-	mpclient.logger.Infof("%+v", mediaResponse)
 
 	return mediaResponse, nil
 }
@@ -828,12 +857,19 @@ func (mpclient Client) QueryMediaURL(
 	return mediaResponse, nil
 }
 
-func (mpclient Client) QueryPostList(micropubEndpoint, accessToken string) (mf2.PostList, error) {
+func (mpclient Client) QueryPostList(micropubEndpoint, accessToken, afterKey string) (mf2.PostList, error) {
 	var postList mf2.PostList
+	var mpURL string
 
-	mpclient.logger.WithField("endpoint", micropubEndpoint).Info("Querying endpoint")
+	if afterKey == "" {
+		mpURL = micropubEndpoint + "?q=source"
+	} else {
+		mpURL = micropubEndpoint + "?q=source&after=" + afterKey
+	}
 
-	req, err := http.NewRequest("GET", micropubEndpoint+"?q=source", nil)
+	mpclient.logger.WithField("endpoint", mpURL).Info("Querying endpoint")
+	req, err := http.NewRequest("GET", mpURL, nil)
+
 	if err != nil {
 		return postList, err
 	}
@@ -857,7 +893,6 @@ func (mpclient Client) QueryPostList(micropubEndpoint, accessToken string) (mf2.
 		mpclient.logger.WithError(err).Error("failed to decode json")
 		return postList, err
 	}
-	mpclient.logger.Infof("%+v", postList)
 
 	return postList, nil
 }

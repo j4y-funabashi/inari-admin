@@ -47,7 +47,12 @@ func MfFromJson(body string) (MicroFormat, error) {
 }
 
 type PostList struct {
-	Items []MicroFormat `json:"items"`
+	Items  []MicroFormat `json:"items"`
+	Paging *ListPaging   `json:"paging,omitempty"`
+}
+
+type ListPaging struct {
+	After string `json:"after"`
 }
 
 func (list *PostList) Add(item MicroFormat) {
@@ -107,6 +112,10 @@ func (mf *MicroFormat) SetDefaults(defaultAuthor, uuid, url string) {
 	}
 	mf.Properties["uid"] = []interface{}{uuid}
 	mf.Properties["url"] = []interface{}{url}
+}
+
+func (mf MicroFormat) GetGeoData() []string {
+	return mf.getStringSlice("location")
 }
 
 func (mf MicroFormat) ToView() MicroFormatView {

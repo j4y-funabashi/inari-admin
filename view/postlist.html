@@ -47,13 +47,10 @@
 </div>
 
 <div>
-  <ul style="text-align:center; list-style: none;">
-    <li>Mar 2019</li>
-    <li>Feb 2019</li>
-    <li>Jan 2019</li>
-    <li>2018</li>
-    <li>2017</li>
-    <li>2016</li>
+  <ul class="list center">
+    {{ with .YearsList }} {{ range $Year := . }}
+    <li>{{ $Year.Year }} ({{ $Year.Count }})</li>
+    {{ end }} {{ end }}
   </ul>
 </div>
 

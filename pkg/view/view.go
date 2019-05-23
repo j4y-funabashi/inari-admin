@@ -49,9 +49,5 @@ func RenderMediaPreview(media MediaItem, outBuf *bytes.Buffer) error {
 		Media:     media,
 	}
 	err = t.ExecuteTemplate(outBuf, "layout", v)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }

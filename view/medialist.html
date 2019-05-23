@@ -29,5 +29,13 @@
     {{ if .HasPaging }} <a href="?after={{ .AfterKey }}">Load More</a> {{ end }}
   </div>
 
+  <div>
+    <ul class="list center">
+      {{ with .YearsList }} {{ range $Year := . }}
+      <li>{{ $Year.Year }} ({{ $Year.Count }})</li>
+      {{ end }} {{ end }}
+    </ul>
+  </div>
+
   {{ end }}
 </div>

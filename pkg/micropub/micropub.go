@@ -23,6 +23,7 @@ type MPClient interface {
 	UploadToMediaServer(uploadedFile UploadedFile, usess session.UserSession) (MediaEndpointResponse, error)
 	SendRequest(body url.Values, endpoint, bearerToken string) (MicropubEndpointResponse, error)
 	QueryPostList(micropubEndpoint, accessToken, afterKey string) (mf2.PostList, error)
+	QueryYearsList(micropubEndpoint, accessToken string) ([]mf2.ArchiveYear, error)
 	QueryMediaList(mediaEndpoint, accessToken, afterKey string) (MediaQueryListResponse, error)
 	QueryMediaURL(URL, mediaEndpoint, accessToken string) (MediaQueryListResponseItem, error)
 }
@@ -134,6 +135,15 @@ func (s *server) HandleQueryMedia() http.HandlerFunc {
 				return
 			}
 
+			// query years list
+			yearsList, err := s.client.QueryYearsList(usess.MediaEndpoint, usess.AccessToken)
+			if err != nil {
+				s.logger.WithError(err).Info("failed to query year list")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			s.logger.WithField("list", yearsList).Info("years list result")
+
 			// TODO template.RenderMediaList
 			t, err := template.ParseFiles(
 				"view/components.html",
@@ -154,11 +164,13 @@ func (s *server) HandleQueryMedia() http.HandlerFunc {
 				MediaList []MediaQueryListResponseItem
 				HasPaging bool
 				AfterKey  string
+				YearsList []mf2.ArchiveYear
 			}{
 				PageTitle: "Choose a Video/Photo",
 				MediaList: mediaResponse.Items,
 				HasPaging: mediaResponse.Paging != nil,
 				AfterKey:  afterKey,
+				YearsList: yearsList,
 			}
 			err = t.ExecuteTemplate(outBuf, "layout", v)
 			if err != nil {
@@ -166,6 +178,7 @@ func (s *server) HandleQueryMedia() http.HandlerFunc {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
+
 		}
 
 		w.Header().Set("Content-type", "text/html; charset=UTF-8")
@@ -263,7 +276,6 @@ func (s *server) HandleQueryPosts() http.HandlerFunc {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-
 		// transform mf2 to jf2
 		var postListView []mf2.MicroFormatView
 		for _, postmf := range postList.Items {
@@ -272,6 +284,15 @@ func (s *server) HandleQueryPosts() http.HandlerFunc {
 		if postList.Paging != nil {
 			afterKey = postList.Paging.After
 		}
+
+		// query years list
+		yearsList, err := s.client.QueryYearsList(usess.MicropubEndpoint, usess.AccessToken)
+		if err != nil {
+			s.logger.WithError(err).Info("failed to query year list")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		s.logger.WithField("list", yearsList).Info("years list result")
 
 		// render
 		t, err := template.ParseFiles(
@@ -291,11 +312,13 @@ func (s *server) HandleQueryPosts() http.HandlerFunc {
 			PostList  []mf2.MicroFormatView
 			HasPaging bool
 			AfterKey  string
+			YearsList []mf2.ArchiveYear
 		}{
 			PageTitle: "LATEST POSTS",
 			PostList:  postListView,
 			HasPaging: postList.Paging != nil,
 			AfterKey:  afterKey,
+			YearsList: yearsList,
 		}
 		t.ExecuteTemplate(outBuf, "layout", v)
 
@@ -866,6 +889,41 @@ func (mpclient Client) QueryPostList(micropubEndpoint, accessToken, afterKey str
 	} else {
 		mpURL = micropubEndpoint + "?q=source&after=" + afterKey
 	}
+
+	mpclient.logger.WithField("endpoint", mpURL).Info("Querying endpoint")
+	req, err := http.NewRequest("GET", mpURL, nil)
+
+	if err != nil {
+		return postList, err
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		mpclient.logger.WithError(err).Error("failed to perform GET request")
+		return postList, err
+	}
+	respBody := &bytes.Buffer{}
+	_, err = respBody.ReadFrom(resp.Body)
+	if err != nil {
+		mpclient.logger.WithError(err).Error("failed to read GET request body")
+		return postList, err
+	}
+	// parse response
+	decoder := json.NewDecoder(respBody)
+	err = decoder.Decode(&postList)
+	if err != nil {
+		mpclient.logger.WithError(err).Error("failed to decode json")
+		return postList, err
+	}
+
+	return postList, nil
+}
+
+func (mpclient Client) QueryYearsList(micropubEndpoint, accessToken string) ([]mf2.ArchiveYear, error) {
+	var postList []mf2.ArchiveYear
+
+	mpURL := micropubEndpoint + "?q=years"
 
 	mpclient.logger.WithField("endpoint", mpURL).Info("Querying endpoint")
 	req, err := http.NewRequest("GET", mpURL, nil)

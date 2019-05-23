@@ -46,6 +46,11 @@ func MfFromJson(body string) (MicroFormat, error) {
 	return mf, nil
 }
 
+type ArchiveYear struct {
+	Year  string `json:"year"`
+	Count int    `json:"count"`
+}
+
 type PostList struct {
 	Items  []MicroFormat `json:"items"`
 	Paging *ListPaging   `json:"paging,omitempty"`
@@ -162,6 +167,10 @@ func (mf *MicroFormat) AddProperty(k string, v interface{}) {
 // Appends a child
 func (mf *MicroFormat) AddChild(v interface{}) {
 	mf.Children = append(mf.Children, v)
+}
+
+func (mf MicroFormat) GetFirstString(key string) string {
+	return mf.getFirstString(key)
 }
 
 func (mf MicroFormat) getFirstString(key string) string {

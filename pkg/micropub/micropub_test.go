@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/j4y_funabashi/inari-admin/pkg/micropub"
+	"github.com/j4y_funabashi/inari-admin/pkg/mpclient"
 	"github.com/matryer/is"
 	"github.com/sirupsen/logrus"
 )
@@ -51,7 +52,7 @@ func TestMediaQueryList(t *testing.T) {
 
 	var tests = []struct {
 		name      string
-		mediaList micropub.MediaQueryListResponse
+		mediaList mpclient.MediaQueryListResponse
 	}{
 		{name: "it works without paging", mediaList: getValidMediaList()},
 		{name: "it works with paging", mediaList: getValidMediaListWithPaging()},
@@ -85,40 +86,40 @@ func TestMediaQueryList(t *testing.T) {
 
 }
 
-func getValidMediaList() micropub.MediaQueryListResponse {
-	return micropub.MediaQueryListResponse{
-		Items: []micropub.MediaQueryListResponseItem{
-			micropub.MediaQueryListResponseItem{
+func getValidMediaList() mpclient.MediaQueryListResponse {
+	return mpclient.MediaQueryListResponse{
+		Items: []mpclient.MediaQueryListResponseItem{
+			mpclient.MediaQueryListResponseItem{
 				URL: "http://example.com/1",
 			},
-			micropub.MediaQueryListResponseItem{
+			mpclient.MediaQueryListResponseItem{
 				URL: "http://example.com/2",
 			},
 		}}
 }
-func getValidMediaListWithPaging() micropub.MediaQueryListResponse {
-	paging := micropub.ListPaging{
+func getValidMediaListWithPaging() mpclient.MediaQueryListResponse {
+	paging := mpclient.ListPaging{
 		After: "123",
 	}
-	return micropub.MediaQueryListResponse{
-		Items: []micropub.MediaQueryListResponseItem{
-			micropub.MediaQueryListResponseItem{
+	return mpclient.MediaQueryListResponse{
+		Items: []mpclient.MediaQueryListResponseItem{
+			mpclient.MediaQueryListResponseItem{
 				URL: "http://example.com/1",
 			},
-			micropub.MediaQueryListResponseItem{
+			mpclient.MediaQueryListResponseItem{
 				URL: "http://example.com/2",
 			},
 		},
 		Paging: &paging,
 	}
 }
-func getValidMediaItem() micropub.MediaQueryListResponseItem {
-	return micropub.MediaQueryListResponseItem{
+func getValidMediaItem() mpclient.MediaQueryListResponseItem {
+	return mpclient.MediaQueryListResponseItem{
 		URL: "http://example.com/1",
 	}
 }
 
-func newMediaServer(t *testing.T, response micropub.MediaQueryListResponse) *httptest.Server {
+func newMediaServer(t *testing.T, response mpclient.MediaQueryListResponse) *httptest.Server {
 	return httptest.NewServer(
 		http.HandlerFunc(
 			func(w http.ResponseWriter, r *http.Request) {
@@ -143,7 +144,7 @@ func newMediaServer(t *testing.T, response micropub.MediaQueryListResponse) *htt
 	)
 }
 
-func newMediaServerSingleItem(t *testing.T, response micropub.MediaQueryListResponseItem) *httptest.Server {
+func newMediaServerSingleItem(t *testing.T, response mpclient.MediaQueryListResponseItem) *httptest.Server {
 	return httptest.NewServer(
 		http.HandlerFunc(
 			func(w http.ResponseWriter, r *http.Request) {

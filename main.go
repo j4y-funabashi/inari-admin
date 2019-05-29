@@ -9,6 +9,7 @@ import (
 	"github.com/j4y_funabashi/inari-admin/pkg/indieauth"
 	"github.com/j4y_funabashi/inari-admin/pkg/login"
 	"github.com/j4y_funabashi/inari-admin/pkg/micropub"
+	"github.com/j4y_funabashi/inari-admin/pkg/okami"
 	"github.com/j4y_funabashi/inari-admin/pkg/session"
 	log "github.com/sirupsen/logrus"
 )
@@ -21,13 +22,12 @@ func main() {
 	sessionBucket := os.Getenv("SESSION_BUCKET")
 	clientID := os.Getenv("CLIENT_ID")
 	redirectURL := os.Getenv("CALLBACK_URL")
+	geoAPIKey := os.Getenv("GEO_API_KEY")
+	geoBaseURL := os.Getenv("GEO_BASE_URL")
 
 	// deps
 	logger := log.New()
 	logger.Formatter = &log.JSONFormatter{}
-
-	router := mux.NewRouter()
-	router.Use(newLoggerMiddleware(logger))
 
 	sstore, err := session.NewS3SessionStore(sessionBucketRegion, sessionBucket)
 	if err != nil {
@@ -36,9 +36,11 @@ func main() {
 	authClient := indieauth.NewClient("", sstore, logger)
 	mpClient := micropub.NewClient(logger)
 
-	geoAPIKey := os.Getenv("GEO_API_KEY")
-	geoBaseURL := os.Getenv("GEO_BASE_URL")
 	geoCoder := google.NewGeocoder(geoAPIKey, geoBaseURL, logger)
+
+	// routes
+	router := mux.NewRouter()
+	router.Use(newLoggerMiddleware(logger))
 
 	// servers
 	loginServer := login.NewServer(
@@ -49,11 +51,14 @@ func main() {
 	)
 	loginServer.Routes(router)
 
+	app := okami.New(mpClient, logger)
+
 	micropubClientServer := micropub.NewServer(
 		logger,
 		sstore,
 		mpClient,
 		geoCoder,
+		app,
 	)
 	micropubClientServer.Routes(router)
 

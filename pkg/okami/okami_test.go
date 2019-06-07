@@ -23,29 +23,45 @@ func TestListMedia(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			// arrange
-			micropubEndpoint := ""
-			accessToken := ""
-			afterKey := ""
 			mockMpClient := MockMPClient{}
 			logger := logrus.New()
 			app := okami.New(mockMpClient, logger)
+
+			micropubEndpoint := ""
+			accessToken := ""
+			afterKey := ""
+			selectedYear := ""
+			selectedMonth := ""
 			expectedYears := []okami.ArchiveYear{
 				okami.ArchiveYear{Year: "2019", Count: 1},
 				okami.ArchiveYear{Year: "2018", Count: 2},
 				okami.ArchiveYear{Year: "2015", Count: 3},
+			}
+			expectedMonths := []okami.ArchiveMonth{
+				okami.ArchiveMonth{Month: "09", Count: 1},
+				okami.ArchiveMonth{Month: "10", Count: 1},
 			}
 			expectedMedia := []okami.Media{
 				okami.Media{URL: "http://media.example.com/1", IsPublished: true},
 				okami.Media{URL: "http://media.example.com/2", IsPublished: false},
 			}
 			expectedResult := okami.ListMediaResponse{
-				Years:    expectedYears,
-				Media:    expectedMedia,
-				AfterKey: "test-after-key-123",
+				Years:        expectedYears,
+				Media:        expectedMedia,
+				Months:       expectedMonths,
+				AfterKey:     "test-after-key-123",
+				CurrentYear:  "2019",
+				CurrentMonth: "09",
 			}
 
 			// act
-			result := app.ListMedia(micropubEndpoint, accessToken, afterKey)
+			result := app.ListMedia(
+				micropubEndpoint,
+				accessToken,
+				afterKey,
+				selectedYear,
+				selectedMonth,
+			)
 
 			// assert
 			is.Equal(result, expectedResult)
@@ -54,6 +70,13 @@ func TestListMedia(t *testing.T) {
 }
 
 type MockMPClient struct {
+}
+
+func (cl MockMPClient) QueryMonthsList(micropubEndpoint, accessToken, currentYear string) ([]mf2.ArchiveMonth, error) {
+	return []mf2.ArchiveMonth{
+		mf2.ArchiveMonth{Month: "09", Count: 1},
+		mf2.ArchiveMonth{Month: "10", Count: 1},
+	}, nil
 }
 
 func (cl MockMPClient) QueryYearsList(micropubEndpoint, accessToken string) ([]mf2.ArchiveYear, error) {

@@ -14,12 +14,19 @@ type Server struct {
 }
 
 type ListMediaResponse struct {
-	Years    []ArchiveYear
-	Media    []Media
-	AfterKey string
+	Years        []ArchiveYear
+	Months       []ArchiveMonth
+	Media        []Media
+	AfterKey     string
+	CurrentYear  string
+	CurrentMonth string
 }
 type ArchiveYear struct {
 	Year  string
+	Count int
+}
+type ArchiveMonth struct {
+	Month string
 	Count int
 }
 type Media struct {
@@ -33,6 +40,7 @@ type Media struct {
 
 type MPClient interface {
 	QueryYearsList(micropubEndpoint, accessToken string) ([]mf2.ArchiveYear, error)
+	QueryMonthsList(micropubEndpoint, accessToken, currentYear string) ([]mf2.ArchiveMonth, error)
 	QueryMediaList(mediaEndpoint, accessToken, afterKey string) (mpclient.MediaQueryListResponse, error)
 }
 
@@ -43,15 +51,29 @@ func New(mpClient MPClient, logger *logrus.Logger) Server {
 	}
 }
 
-func (s Server) ListMedia(mediaEndpoint, accessToken, afterKey string) ListMediaResponse {
+func (s Server) ListMedia(mediaEndpoint, accessToken, afterKey, selectedYear, selectedMonth string) ListMediaResponse {
+
+	years := s.listMediaYears(mediaEndpoint, accessToken)
+	currentYear := selectedYear
+	if currentYear == "" {
+		currentYear = years[0].Year
+	}
+
+	months := s.listMediaMonths(mediaEndpoint, accessToken, currentYear)
+	currentMonth := selectedMonth
+	if currentMonth == "" {
+		currentMonth = months[0].Month
+	}
 
 	media, newAfterKey := s.listMedia(mediaEndpoint, accessToken, afterKey)
-	years := s.listMediaYears(mediaEndpoint, accessToken)
 
 	return ListMediaResponse{
-		Years:    years,
-		Media:    media,
-		AfterKey: newAfterKey,
+		Years:        years,
+		Media:        media,
+		Months:       months,
+		AfterKey:     newAfterKey,
+		CurrentYear:  currentYear,
+		CurrentMonth: currentMonth,
 	}
 }
 
@@ -71,6 +93,25 @@ func (s Server) listMediaYears(mediaEndpoint, accessToken string) []ArchiveYear 
 	}
 
 	return years
+}
+
+func (s Server) listMediaMonths(mediaEndpoint, accessToken, currentYear string) []ArchiveMonth {
+	var months []ArchiveMonth
+	yearsList, err := s.mpClient.QueryMonthsList(
+		mediaEndpoint,
+		accessToken,
+		currentYear,
+	)
+	if err != nil {
+		s.logger.WithError(err).
+			Info("failed to query year list")
+		return months
+	}
+	for _, y := range yearsList {
+		months = append(months, ArchiveMonth{Month: y.Month, Count: y.Count})
+	}
+
+	return months
 }
 
 func (s Server) listMedia(mediaEndpoint, accessToken, afterKey string) ([]Media, string) {

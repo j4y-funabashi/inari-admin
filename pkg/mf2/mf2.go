@@ -51,6 +51,11 @@ type ArchiveYear struct {
 	Count int    `json:"count"`
 }
 
+type ArchiveMonth struct {
+	Month string `json:"month"`
+	Count int    `json:"count"`
+}
+
 type PostList struct {
 	Items  []MicroFormat `json:"items"`
 	Paging *ListPaging   `json:"paging,omitempty"`

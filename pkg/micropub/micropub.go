@@ -3,6 +3,7 @@ package micropub
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"io"
 	"mime/multipart"
@@ -85,7 +86,6 @@ func (s *server) HandleQueryMedia() http.HandlerFunc {
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}
-
 		// fetch session
 		usess, err := s.SessionStore.FetchByID(cookie.Value)
 		if err != nil {
@@ -96,7 +96,6 @@ func (s *server) HandleQueryMedia() http.HandlerFunc {
 		s.logger.WithField("user", usess).Info("logged in user")
 
 		mediaURL := r.URL.Query().Get("url")
-
 		outBuf := new(bytes.Buffer)
 		if len(mediaURL) > 0 {
 			// fetch media
@@ -129,39 +128,22 @@ func (s *server) HandleQueryMedia() http.HandlerFunc {
 		} else {
 
 			afterKey := r.URL.Query().Get("after")
-			mediaResponse := s.app.ListMedia(usess.MediaEndpoint, usess.AccessToken, afterKey)
-			v := struct {
-				PageTitle string
-				MediaList []okami.Media
-				HasPaging bool
-				AfterKey  string
-				YearsList []okami.ArchiveYear
-			}{
-				PageTitle: "Choose a Video/Photo",
-				MediaList: mediaResponse.Media,
-				HasPaging: mediaResponse.AfterKey != "",
-				AfterKey:  mediaResponse.AfterKey,
-				YearsList: mediaResponse.Years,
-			}
-
-			// TODO render template.RenderMediaList
-			t, err := template.ParseFiles(
-				"view/components.html",
-				"view/layout.html",
-				"view/medialist.html",
+			selectedMonth := r.URL.Query().Get("month")
+			selectedYear := r.URL.Query().Get("year")
+			mediaResponse := s.app.ListMedia(
+				usess.MediaEndpoint,
+				usess.AccessToken,
+				afterKey,
+				selectedYear,
+				selectedMonth,
 			)
+
+			err = view.RenderMediaList(mediaResponse, outBuf)
 			if err != nil {
 				s.logger.WithError(err).Error("failed to parse template files")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			err = t.ExecuteTemplate(outBuf, "layout", v)
-			if err != nil {
-				s.logger.WithError(err).Error("failed to execute template")
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
 		}
 
 		w.Header().Set("Content-type", "text/html; charset=UTF-8")
@@ -892,6 +874,40 @@ func (client Client) QueryYearsList(micropubEndpoint, accessToken string) ([]mf2
 
 	mpURL := micropubEndpoint + "?q=years"
 
+	client.logger.WithField("endpoint", mpURL).Info("Querying endpoint")
+	req, err := http.NewRequest("GET", mpURL, nil)
+
+	if err != nil {
+		return postList, err
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	httpclient := &http.Client{}
+	resp, err := httpclient.Do(req)
+	if err != nil {
+		client.logger.WithError(err).Error("failed to perform GET request")
+		return postList, err
+	}
+	respBody := &bytes.Buffer{}
+	_, err = respBody.ReadFrom(resp.Body)
+	if err != nil {
+		client.logger.WithError(err).Error("failed to read GET request body")
+		return postList, err
+	}
+	// parse response
+	decoder := json.NewDecoder(respBody)
+	err = decoder.Decode(&postList)
+	if err != nil {
+		client.logger.WithError(err).Error("failed to decode json")
+		return postList, err
+	}
+
+	return postList, nil
+}
+
+func (client Client) QueryMonthsList(micropubEndpoint, accessToken, currentYear string) ([]mf2.ArchiveMonth, error) {
+	var postList []mf2.ArchiveMonth
+
+	mpURL := fmt.Sprintf("%s?q=months&year=%s", micropubEndpoint, currentYear)
 	client.logger.WithField("endpoint", mpURL).Info("Querying endpoint")
 	req, err := http.NewRequest("GET", mpURL, nil)
 

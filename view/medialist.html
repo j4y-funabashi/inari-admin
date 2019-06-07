@@ -7,35 +7,54 @@
   <h1>{{ .PageTitle }}</h1>
 </div>
 
+<h2>{{ .CurrentYear }} / {{ .CurrentMonth }}</h2>
+
+{{ with .Media }}
 <div class="cf">
-  {{ range .MediaList }} {{ if .IsPublished }}
-  <div class="fl w-third ba bw2 b--red">
-    {{ else }}
-    <div class="fl w-third ba bw2 b--near-white">
-      {{ end }}
-
-      <a href="/composer/media/gallery?url={{ .URL }}">
-        <img
-          class="w-100"
-          src="https://d22ubqq5wh0gzm.cloudfront.net/insecure/fill/150/150/ce/0/plain/{{ .URL }}"
-        />
-      </a>
-    </div>
-
-    {{ end }}
+  {{ range . }}
+  <div class="fl w-third ba bw2 b--{{ .BorderColour }}">
+    <a href="/composer/media/gallery?url={{ .URL }}">
+      <img
+        class="w-100"
+        src="https://d22ubqq5wh0gzm.cloudfront.net/insecure/fill/150/150/ce/0/plain/{{ .URL }}"
+      />
+    </a>
   </div>
-
-  <div>
-    {{ if .HasPaging }} <a href="?after={{ .AfterKey }}">Load More</a> {{ end }}
-  </div>
-
-  <div>
-    <ul class="list center">
-      {{ with .YearsList }} {{ range $Year := . }}
-      <li>{{ $Year.Year }} ({{ $Year.Count }})</li>
-      {{ end }} {{ end }}
-    </ul>
-  </div>
-
   {{ end }}
 </div>
+{{ end }}
+
+<!-- ARCHIVE NAVIGATION -->
+{{ if .HasPaging }}
+<div>
+  <a href="?after={{ .AfterKey }}">Load More</a>
+</div>
+{{ end }}
+
+<div>
+  <!-- months -->
+  {{ with .Months }}
+  <ul class="list center">
+    {{ range . }}
+    <li>
+      <a href="{{ .Link }}">{{ .Month }}</a>
+      ({{ .Count }})
+    </li>
+    {{ end }}
+  </ul>
+  {{ end }}
+
+  <!-- years -->
+  {{ with .Years }}
+  <ul class="list center">
+    {{ range . }}
+    <li>
+      <a href="{{ .Link }}">{{ .Year }}</a>
+      ({{ .Count }})
+    </li>
+    {{ end }}
+  </ul>
+  {{ end }}
+</div>
+
+{{ end }}

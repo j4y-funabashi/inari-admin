@@ -12,3 +12,5 @@ services:
             SESSION_BUCKET: "admin.funabashi.co.uk"
         ports:
             - 8090:80
+        volumes:
+          - ./view:/go/src/github.com/j4y_funabashi/inari-admin/view

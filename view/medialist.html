@@ -9,20 +9,29 @@
 
 <h2>{{ .CurrentYear }} / {{ .CurrentMonth }}</h2>
 
-{{ with .Media }}
-<div class="cf">
-  {{ range . }}
-  <div class="fl w-third ba bw2 b--{{ .BorderColour }}">
-    <a href="/composer/media/gallery?url={{ .URL }}">
-      <img
+{{ with .MediaDays }} {{ range . }}
+<div>
+  <h3>{{ .Date }}</h3>
+
+  <!--photo grid-->
+  {{ with .Media }}
+  <div class="cf">
+    {{ range . }}
+    <div class="fl w-third ba bw2 b--{{ .BorderColour }}">
+      <a href="/composer/media/gallery?url={{ .URL }}">
+        <!--<img
         class="w-100"
         src="https://d22ubqq5wh0gzm.cloudfront.net/insecure/fill/150/150/ce/0/plain/{{ .URL }}"
-      />
-    </a>
+      />-->
+        <img class="w-100" src="{{ .URL }}" />
+      </a>
+    </div>
+    {{ end }}
   </div>
   {{ end }}
+  <!--/photo grid-->
 </div>
-{{ end }}
+{{end}} {{ end }}
 
 <!-- ARCHIVE NAVIGATION -->
 {{ if .HasPaging }}
@@ -32,6 +41,7 @@
 {{ end }}
 
 <div>
+  <h3>{{ .CurrentYear }} / {{ .CurrentMonth }}</h3>
   <!-- months -->
   {{ with .Months }}
   <ul class="list center">

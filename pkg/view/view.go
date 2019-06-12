@@ -12,8 +12,43 @@ import (
 
 const (
 	HumanDateLayout   = "Mon, Jan 02, 2006 15:04 -0700"
+	HumanDayLayout    = "Mon, 02 January"
 	MachineDateLayout = time.RFC3339
 )
+
+type Month struct {
+	Month string
+	Count int
+	Link  string
+}
+
+type Year struct {
+	Year  string
+	Count int
+	Link  string
+}
+
+type ListMediaView struct {
+	Months       []Month
+	Years        []Year
+	CurrentMonth string
+	CurrentYear  string
+	Media        []Media
+	AfterKey     string
+	HasPaging    bool
+	PageTitle    string
+	MediaDays    []MediaDay
+}
+
+type MediaDay struct {
+	Date  string
+	Media []Media
+}
+
+type Media struct {
+	URL          string
+	BorderColour string
+}
 
 type MediaItem struct {
 	URL      string     `json:"url"`
@@ -54,12 +89,6 @@ func RenderMediaPreview(media MediaItem, outBuf *bytes.Buffer) error {
 	}
 	err = t.ExecuteTemplate(outBuf, "layout", v)
 	return err
-}
-
-type Month struct {
-	Month string
-	Count int
-	Link  string
 }
 
 func parseMonth(month string) string {
@@ -109,42 +138,55 @@ func parseYears(years []okami.ArchiveYear) []Year {
 	return out
 }
 
-type Year struct {
-	Year  string
-	Count int
-	Link  string
+func parseMediaDays(media []okami.Media) []MediaDay {
+	out := []MediaDay{}
+
+	dayMap := make(map[string][]Media)
+	dayList := []string{}
+	for _, m := range media {
+
+		_, exists := dayMap[m.DateTime.Format("2006-01-02")]
+
+		dayMap[m.DateTime.Format("2006-01-02")] = append(
+			dayMap[m.DateTime.Format("2006-01-02")],
+			parseMedia(m),
+		)
+		if !exists {
+			dayList = append(dayList, m.DateTime.Format("2006-01-02"))
+		}
+	}
+
+	for _, day := range dayList {
+		mediaDay, _ := time.Parse("2006-01-02", day)
+		out = append(
+			out,
+			MediaDay{
+				Date:  mediaDay.Format(HumanDayLayout),
+				Media: dayMap[day],
+			},
+		)
+	}
+
+	return out
 }
 
-type ListMediaView struct {
-	Months       []Month
-	Years        []Year
-	CurrentMonth string
-	CurrentYear  string
-	Media        []Media
-	AfterKey     string
-	HasPaging    bool
-	PageTitle    string
-}
-
-type Media struct {
-	URL          string
-	BorderColour string
+func parseMedia(media okami.Media) Media {
+	bc := "near-white"
+	if media.IsPublished {
+		bc = "red"
+	}
+	m := Media{
+		URL:          media.URL,
+		BorderColour: bc,
+	}
+	return m
 }
 
 func parseMediaList(media []okami.Media) []Media {
 	out := []Media{}
 
 	for _, m := range media {
-
-		bc := "near-white"
-		if m.IsPublished {
-			bc = "red"
-		}
-		m := Media{
-			URL:          m.URL,
-			BorderColour: bc,
-		}
-		out = append(out, m)
+		out = append(out, parseMedia(m))
 	}
 
 	return out
@@ -156,6 +198,7 @@ func ParseListMediaView(mediaResponse okami.ListMediaResponse) ListMediaView {
 	cm := parseMonth(mediaResponse.CurrentMonth)
 	cy := mediaResponse.CurrentYear
 	media := parseMediaList(mediaResponse.Media)
+	mediaDays := parseMediaDays(mediaResponse.Media)
 	ak := mediaResponse.AfterKey
 
 	return ListMediaView{
@@ -167,6 +210,7 @@ func ParseListMediaView(mediaResponse okami.ListMediaResponse) ListMediaView {
 		AfterKey:     ak,
 		HasPaging:    ak != "",
 		PageTitle:    "Choose some shiz to shizzle with",
+		MediaDays:    mediaDays,
 	}
 }
 

@@ -67,13 +67,15 @@ func TestMediaQueryList(t *testing.T) {
 			// arrange
 			accessToken := "test-token"
 			afterKey := ""
+			year := ""
+			month := ""
 			mediaServer := newMediaServer(t, tt.mediaList)
 			mediaEndpoint := mediaServer.URL
 			logger := logrus.New()
 			mpclient := micropub.NewClient(logger)
 
 			// act
-			response, err := mpclient.QueryMediaList(mediaEndpoint, accessToken, afterKey)
+			response, err := mpclient.QueryMediaList(mediaEndpoint, accessToken, afterKey, year, month)
 			if err != nil {
 				t.Errorf("failed to query media list:: %s", err.Error())
 			}

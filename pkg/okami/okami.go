@@ -41,7 +41,7 @@ type Media struct {
 type MPClient interface {
 	QueryYearsList(micropubEndpoint, accessToken string) ([]mf2.ArchiveYear, error)
 	QueryMonthsList(micropubEndpoint, accessToken, currentYear string) ([]mf2.ArchiveMonth, error)
-	QueryMediaList(mediaEndpoint, accessToken, afterKey string) (mpclient.MediaQueryListResponse, error)
+	QueryMediaList(mediaEndpoint, accessToken, afterKey, year, month string) (mpclient.MediaQueryListResponse, error)
 }
 
 func New(mpClient MPClient, logger *logrus.Logger) Server {
@@ -65,7 +65,13 @@ func (s Server) ListMedia(mediaEndpoint, accessToken, afterKey, selectedYear, se
 		currentMonth = months[0].Month
 	}
 
-	media, newAfterKey := s.listMedia(mediaEndpoint, accessToken, afterKey)
+	media, newAfterKey := s.listMedia(
+		mediaEndpoint,
+		accessToken,
+		afterKey,
+		currentYear,
+		currentMonth,
+	)
 
 	return ListMediaResponse{
 		Years:        years,
@@ -114,12 +120,14 @@ func (s Server) listMediaMonths(mediaEndpoint, accessToken, currentYear string) 
 	return months
 }
 
-func (s Server) listMedia(mediaEndpoint, accessToken, afterKey string) ([]Media, string) {
+func (s Server) listMedia(mediaEndpoint, accessToken, afterKey, year, month string) ([]Media, string) {
 	var media []Media
 	mediaList, err := s.mpClient.QueryMediaList(
 		mediaEndpoint,
 		accessToken,
 		afterKey,
+		year,
+		month,
 	)
 	if err != nil {
 		s.logger.WithError(err).
@@ -132,6 +140,7 @@ func (s Server) listMedia(mediaEndpoint, accessToken, afterKey string) ([]Media,
 			Media{
 				URL:         mediaItem.URL,
 				IsPublished: mediaItem.IsPublished,
+				DateTime:    mediaItem.DateTime,
 			},
 		)
 	}

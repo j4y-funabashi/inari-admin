@@ -27,7 +27,7 @@ type MPClient interface {
 	SendRequest(body url.Values, endpoint, bearerToken string) (MicropubEndpointResponse, error)
 	QueryPostList(micropubEndpoint, accessToken, afterKey string) (mf2.PostList, error)
 	QueryYearsList(micropubEndpoint, accessToken string) ([]mf2.ArchiveYear, error)
-	QueryMediaList(mediaEndpoint, accessToken, afterKey string) (mpclient.MediaQueryListResponse, error)
+	QueryMediaList(mediaEndpoint, accessToken, afterKey, year, month string) (mpclient.MediaQueryListResponse, error)
 	QueryMediaURL(URL, mediaEndpoint, accessToken string) (mpclient.MediaQueryListResponseItem, error)
 }
 
@@ -742,13 +742,15 @@ func (s *server) ShowComposerForm(sessionid string) HttpResponse {
 func (client Client) QueryMediaList(
 	mediaEndpoint,
 	accessToken,
-	afterKey string,
+	afterKey,
+	year,
+	month string,
 ) (mpclient.MediaQueryListResponse, error) {
 	var mediaResponse mpclient.MediaQueryListResponse
 
 	mpURL := ""
 	if afterKey == "" {
-		mpURL = mediaEndpoint + "?q=source&limit=15"
+		mpURL = mediaEndpoint + "?q=source&limit=15&year=" + year + "&month=" + month
 	} else {
 		mpURL = mediaEndpoint + "?q=source&limit=15&after=" + afterKey
 	}

@@ -39,6 +39,9 @@ func TestParseMediaListViewModel(t *testing.T) {
 
 	is := is.New(t)
 
+	mediaDat1, _ := time.Parse(time.RFC3339, "2006-01-28T15:04:05Z")
+	mediaDat2, _ := time.Parse(time.RFC3339, "2007-01-28T15:04:05Z")
+
 	// arrange
 	mediaResponse := okami.ListMediaResponse{
 		CurrentYear:  "2019",
@@ -52,8 +55,9 @@ func TestParseMediaListViewModel(t *testing.T) {
 			okami.ArchiveYear{Year: "2016", Count: 4},
 		},
 		Media: []okami.Media{
-			okami.Media{URL: "http://example.com/1.jpg", IsPublished: true},
-			okami.Media{URL: "http://example.com/2.jpg", IsPublished: false},
+			okami.Media{URL: "http://example.com/1.jpg", DateTime: &mediaDat1, IsPublished: true},
+			okami.Media{URL: "http://example.com/2.jpg", DateTime: &mediaDat2, IsPublished: false},
+			okami.Media{URL: "http://example.com/3.jpg", DateTime: &mediaDat2, IsPublished: false},
 		},
 		AfterKey: "test-after-key",
 	}
@@ -72,10 +76,26 @@ func TestParseMediaListViewModel(t *testing.T) {
 		Media: []view.Media{
 			view.Media{URL: "http://example.com/1.jpg", BorderColour: "red"},
 			view.Media{URL: "http://example.com/2.jpg", BorderColour: "near-white"},
+			view.Media{URL: "http://example.com/3.jpg", BorderColour: "near-white"},
 		},
 		AfterKey:  "test-after-key",
 		HasPaging: true,
 		PageTitle: "Choose some shiz to shizzle with",
+		MediaDays: []view.MediaDay{
+			view.MediaDay{
+				Date: "Sat, 28 January",
+				Media: []view.Media{
+					view.Media{URL: "http://example.com/1.jpg", BorderColour: "red"},
+				},
+			},
+			view.MediaDay{
+				Date: "Sun, 28 January",
+				Media: []view.Media{
+					view.Media{URL: "http://example.com/2.jpg", BorderColour: "near-white"},
+					view.Media{URL: "http://example.com/3.jpg", BorderColour: "near-white"},
+				},
+			},
+		},
 	}
 
 	// act

@@ -1,17 +1,29 @@
 {{ define "content" }}
 
-<form action="/login-init" method="post">
-  <label for="login">Enterz your url to login</label>
-  <input
-    id="login"
-    type="text"
-    name="me"
-    class='{{ template "input-text" }}'
-    placeholder="https://example.com"
-    required
-    autofocus
-  />
-  <input class='{{ template "btn-cta" }}' type="submit" value="Login" />
-</form>
+<section class="section">
+  <h1 class="title">Login</h1>
+  <form action="/login-init" method="post">
+    <div class="field has-addons">
+      <div class="control is-expanded">
+        <input
+          id="login"
+          type="text"
+          name="me"
+          class="input is-large"
+          placeholder="https://example.com"
+          required
+          autofocus
+        />
+      </div>
+      <div class="control">
+        <input
+          class="button is-link is-large is-block"
+          type="submit"
+          value="Login"
+        />
+      </div>
+    </div>
+  </form>
+</section>
 
 {{ end }}

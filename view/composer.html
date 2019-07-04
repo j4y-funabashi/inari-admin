@@ -1,16 +1,17 @@
 {{ define "content" }}
 
 <div>
-  <a href="/composer">back</a>
-  <h1>{{ .PageTitle }}</h1>
+  <figure class="image is-48x48">
+    <img
+      src="https://images.weserv.nl/?w=48&h=48&t=square&a=entropy&url={{ .User.Photo }}"
+    />
+  </figure>
+
+  <span class="v-mid">{{ .User.Name }}</span>
 </div>
 
 <div>
-  <img
-    class="v-mid"
-    src="https://d22ubqq5wh0gzm.cloudfront.net/insecure/fill/35/35/ce/0/plain/{{ .User.Photo }}"
-  />
-  <span class="v-mid">{{ .User.Name }}</span>
+  <h1>{{ .PageTitle }}</h1>
 </div>
 
 <form
@@ -18,34 +19,44 @@
   action="/submit"
   enctype="application/x-www-form-urlencoded"
 >
-  <textarea
-    name="content"
-    placeholder="Add a caption"
-    class='{{ template "input-textarea" }}'
-    autofocus
-  ></textarea>
-  <input type="hidden" name="h" value="entry" />
+  <div class="field">
+    <div class="control">
+      <textarea
+        name="content"
+        placeholder="Add a caption"
+        class="textarea"
+        autofocus
+      ></textarea>
+      <input type="hidden" name="h" value="entry" />
+    </div>
+  </div>
 
-  {{ range .Photos }}
-  <img
-    src="https://d22ubqq5wh0gzm.cloudfront.net/insecure/fill/75/75/ce/0/plain/{{ .URL }}"
-  />
-  {{ end }}
+  {{ range .Photos }} {{ template "media-thumbnail" . }} {{ end }}
 
   <ul>
     <li>
-      <a href="/composer/addpublished">
+      <a href="/composer/addpublished" class="button is-fullwidth">
         {{if .Published }} {{ .Published }} {{else}} Published {{end}}
       </a>
     </li>
-    <li><a href="/composer/media/device">Photo</a></li>
+
     <li>
-      <a href="/composer/addlocation">
-        {{if .Location }} {{ .Location }} {{else}} Location {{end}}
+      <a href="/composer/media/device" class="button is-fullwidth"
+        >Add a photo</a
+      >
+    </li>
+    <li>
+      <a href="/composer/addlocation" class="button is-fullwidth">
+        {{if .Location }} {{ .Location }} {{else}} Add Location {{end}}
       </a>
     </li>
   </ul>
-  <button type="submit" class='{{ template "btn-cta" }}'>Post</button>
+
+  <div class="field">
+    <div class="control">
+      <button type="submit" class="button is-primary is-fullwidth">Post</button>
+    </div>
+  </div>
 </form>
 
 {{ end }}

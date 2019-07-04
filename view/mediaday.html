@@ -16,37 +16,29 @@
   </ul>
 </nav>
 
-{{ with .MediaDays }} {{ range . }}
+{{ with .Media }} {{ range . }}
 <div class="card">
-  <div class="card-content">
-    <h1 class="title is-4">{{ .Date }}</h1>
-    <h2 class="subtitle">{{ .Count }} items</h2>
-
-    {{ with .Media }}
-    <div class="columns is-mobile is-gapless">
-      {{ range . }}
-      <div class="column">
-        {{ template "media-thumbnail" . }} {{ if .IsPublished }}
-        <span class="tag is-info">x</span>
-        {{ end }}
-      </div>
-      {{ end }}
-    </div>
-    {{ end }}
+  <div class="card-header">
+    <h1 class="card-header-title">{{ .HumanDate }}</h1>
   </div>
 
-  <footer class="card-footer">
-    <a class="card-footer-item" href="{{ .Link }}">See More</a>
-  </footer>
-</div>
-{{end}} {{ end }}
+  <div class="card-image">
+    <figure class="image">
+      <img src="https://images.weserv.nl/?w=500&t=fit&url={{ .URL }}" />
+    </figure>
+  </div>
 
-<!-- ARCHIVE NAVIGATION -->
-{{ if .HasPaging }}
-<div>
-  <a href="?after={{ .AfterKey }}">Load More</a>
+  <div class="card-content">
+    <form method="post" action="/composer/media">
+      <input type="hidden" name="url" value="{{ .URL }}" />
+      <input type="hidden" name="datetime" value="{{ .MachineDate }}" />
+      <button type="submit" class="button is-primary is-fullwidth">
+        Add to post
+      </button>
+    </form>
+  </div>
 </div>
-{{ end }}
+{{ end }} {{ end }}
 
 <div>
   <h3>{{ .CurrentYear }} / {{ .CurrentMonth }}</h3>

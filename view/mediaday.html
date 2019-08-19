@@ -32,9 +32,15 @@
     <form method="post" action="/composer/media">
       <input type="hidden" name="url" value="{{ .URL }}" />
       <input type="hidden" name="datetime" value="{{ .MachineDate }}" />
+
+      <input type="hidden" name="lat" value="{{ .Lat }}" />
+      <input type="hidden" name="lng" value="{{ .Lng }}" />
+
+      {{ if .IsPublished }} Published! {{ else }}
       <button type="submit" class="button is-primary is-fullwidth">
         Add to post
       </button>
+      {{ end }}
     </form>
   </div>
 </div>

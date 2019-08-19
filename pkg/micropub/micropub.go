@@ -130,6 +130,7 @@ func (s *server) HandleQueryMedia() http.HandlerFunc {
 			afterKey := r.URL.Query().Get("after")
 			selectedMonth := r.URL.Query().Get("month")
 			selectedYear := r.URL.Query().Get("year")
+			selectedDay := r.URL.Query().Get("day")
 			mediaResponse := s.app.ListMedia(
 				usess.MediaEndpoint,
 				usess.AccessToken,
@@ -138,7 +139,12 @@ func (s *server) HandleQueryMedia() http.HandlerFunc {
 				selectedMonth,
 			)
 
-			err = view.RenderMediaList(mediaResponse, outBuf)
+			if selectedDay == "" {
+				err = view.RenderMediaList(mediaResponse, outBuf)
+			} else {
+				err = view.RenderMediaDay(mediaResponse, selectedDay, outBuf)
+			}
+
 			if err != nil {
 				s.logger.WithError(err).Error("failed to parse template files")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -184,6 +190,7 @@ func (s *server) HandleAddMediaToComposer() http.HandlerFunc {
 			Lat: lat,
 			Lng: lng,
 		}
+
 		usess.AddPhotoUpload(
 			r.FormValue("url"),
 			r.FormValue("datetime"),
@@ -705,6 +712,7 @@ func (s *server) ShowComposerForm(sessionid string) HttpResponse {
 		"view/components.html",
 		"view/layout.html",
 		"view/composer.html",
+		"view/media-thumbnail.html",
 	)
 	if err != nil {
 		return HttpResponse{
@@ -725,7 +733,7 @@ func (s *server) ShowComposerForm(sessionid string) HttpResponse {
 		Photos:    usess.ComposerData.Photos,
 		User:      usess.HCard,
 		Published: usess.ComposerData.Published,
-		Location:  usess.ComposerData.Location.ToGeoURL(),
+		Location:  usess.ComposerData.Location.ToHuman(),
 	}
 	t.ExecuteTemplate(w, "layout", v)
 

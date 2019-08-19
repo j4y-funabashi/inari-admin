@@ -141,6 +141,9 @@ func (s Server) listMedia(mediaEndpoint, accessToken, afterKey, year, month stri
 				URL:         mediaItem.URL,
 				IsPublished: mediaItem.IsPublished,
 				DateTime:    mediaItem.DateTime,
+				Lat:         mediaItem.Lat,
+				Lng:         mediaItem.Lng,
+				MimeType:    mediaItem.MimeType,
 			},
 		)
 	}

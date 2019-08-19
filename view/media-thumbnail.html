@@ -1,7 +1,13 @@
 {{ define "media-thumbnail" }}
-<figure class="image is-96x96">
+<figure class="image">
   <img
-    src="https://images.weserv.nl/?w=96&h=96&t=square&a=entropy&url={{ .URL }}"
+    src="https://images.weserv.nl/?w=240&h=240&t=square&a=entropy&url={{ .URL }}"
+  />
+</figure>
+{{ end }} {{ define "media-summary" }}
+<figure class="image">
+  <img
+    src="https://images.weserv.nl/?w=500&h=500&t=square&a=entropy&url={{ .URL }}"
   />
 </figure>
 {{ end }}

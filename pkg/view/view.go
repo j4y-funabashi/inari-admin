@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	HumanDateLayout   = "Mon, Jan 02, 2006 15:04 -0700"
+	HumanDateLayout   = "Mon, Jan 02, 2006 15:04"
 	HumanDayLayout    = "Mon, 02 January"
 	MachineDateLayout = time.RFC3339
 )
@@ -43,11 +43,17 @@ type ListMediaView struct {
 type MediaDay struct {
 	Date  string
 	Media []Media
+	Count int
+	Link  string
 }
 
 type Media struct {
-	URL          string
-	BorderColour string
+	URL         string
+	HumanDate   string
+	IsPublished bool
+	MachineDate string
+	Lat         float64
+	Lng         float64
 }
 
 type MediaItem struct {
@@ -138,15 +144,13 @@ func parseYears(years []okami.ArchiveYear) []Year {
 	return out
 }
 
-func parseMediaDays(media []okami.Media) []MediaDay {
+func parseMediaDays(media []okami.Media, currentMonth, currentYear string) []MediaDay {
 	out := []MediaDay{}
 
 	dayMap := make(map[string][]Media)
 	dayList := []string{}
 	for _, m := range media {
-
 		_, exists := dayMap[m.DateTime.Format("2006-01-02")]
-
 		dayMap[m.DateTime.Format("2006-01-02")] = append(
 			dayMap[m.DateTime.Format("2006-01-02")],
 			parseMedia(m),
@@ -158,11 +162,18 @@ func parseMediaDays(media []okami.Media) []MediaDay {
 
 	for _, day := range dayList {
 		mediaDay, _ := time.Parse("2006-01-02", day)
+		dayLink := fmt.Sprintf("?month=%s&year=%s&day=%d", currentMonth, currentYear, mediaDay.Day())
+		limit := 3
+		if limit > len(dayMap[day]) {
+			limit = len(dayMap[day])
+		}
 		out = append(
 			out,
 			MediaDay{
 				Date:  mediaDay.Format(HumanDayLayout),
-				Media: dayMap[day],
+				Media: dayMap[day][0:limit],
+				Count: len(dayMap[day]),
+				Link:  dayLink,
 			},
 		)
 	}
@@ -171,13 +182,14 @@ func parseMediaDays(media []okami.Media) []MediaDay {
 }
 
 func parseMedia(media okami.Media) Media {
-	bc := "near-white"
-	if media.IsPublished {
-		bc = "red"
-	}
+	url := media.URL
 	m := Media{
-		URL:          media.URL,
-		BorderColour: bc,
+		URL:         url,
+		IsPublished: media.IsPublished,
+		HumanDate:   media.DateTime.Format(HumanDateLayout),
+		MachineDate: media.DateTime.Format(MachineDateLayout),
+		Lat:         media.Lat,
+		Lng:         media.Lng,
 	}
 	return m
 }
@@ -192,13 +204,26 @@ func parseMediaList(media []okami.Media) []Media {
 	return out
 }
 
+func filterMediaDay(media []okami.Media, selectedDay string) []okami.Media {
+
+	out := []okami.Media{}
+
+	for _, m := range media {
+		if m.DateTime.Format("2") == selectedDay {
+			out = append(out, m)
+		}
+	}
+
+	return out
+}
+
 func ParseListMediaView(mediaResponse okami.ListMediaResponse) ListMediaView {
 	months := parseMonths(mediaResponse.Months, mediaResponse.CurrentYear)
 	years := parseYears(mediaResponse.Years)
 	cm := parseMonth(mediaResponse.CurrentMonth)
 	cy := mediaResponse.CurrentYear
 	media := parseMediaList(mediaResponse.Media)
-	mediaDays := parseMediaDays(mediaResponse.Media)
+	mediaDays := parseMediaDays(mediaResponse.Media, mediaResponse.CurrentMonth, mediaResponse.CurrentYear)
 	ak := mediaResponse.AfterKey
 
 	return ListMediaView{
@@ -214,6 +239,49 @@ func ParseListMediaView(mediaResponse okami.ListMediaResponse) ListMediaView {
 	}
 }
 
+type MediaDayView struct {
+	Months       []Month
+	Years        []Year
+	CurrentMonth string
+	CurrentYear  string
+	Media        []Media
+	PageTitle    string
+}
+
+func ParseMediaDayView(mediaResponse okami.ListMediaResponse, selectedDay string) MediaDayView {
+	months := parseMonths(mediaResponse.Months, mediaResponse.CurrentYear)
+	years := parseYears(mediaResponse.Years)
+	cm := parseMonth(mediaResponse.CurrentMonth)
+	cy := mediaResponse.CurrentYear
+	media := parseMediaList(filterMediaDay(mediaResponse.Media, selectedDay))
+
+	return MediaDayView{
+		Months:       months,
+		Years:        years,
+		CurrentMonth: cm,
+		CurrentYear:  cy,
+		Media:        media,
+		PageTitle:    "Choose some shiz to shizzle with",
+	}
+}
+
+func RenderMediaDay(mediaResponse okami.ListMediaResponse, selectedDay string, outBuf *bytes.Buffer) error {
+
+	viewModel := ParseMediaDayView(mediaResponse, selectedDay)
+
+	t, err := template.ParseFiles(
+		"view/components.html",
+		"view/layout.html",
+		"view/mediaday.html",
+		"view/media-thumbnail.html",
+	)
+	if err != nil {
+		return err
+	}
+	err = t.ExecuteTemplate(outBuf, "layout", viewModel)
+	return err
+}
+
 func RenderMediaList(mediaResponse okami.ListMediaResponse, outBuf *bytes.Buffer) error {
 
 	viewModel := ParseListMediaView(mediaResponse)
@@ -222,6 +290,7 @@ func RenderMediaList(mediaResponse okami.ListMediaResponse, outBuf *bytes.Buffer
 		"view/components.html",
 		"view/layout.html",
 		"view/medialist.html",
+		"view/media-thumbnail.html",
 	)
 	if err != nil {
 		return err

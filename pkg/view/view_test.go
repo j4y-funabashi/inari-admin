@@ -74,9 +74,16 @@ func TestParseMediaListViewModel(t *testing.T) {
 		CurrentMonth: "March",
 		CurrentYear:  "2019",
 		Media: []view.Media{
-			view.Media{URL: "http://example.com/1.jpg", BorderColour: "red"},
-			view.Media{URL: "http://example.com/2.jpg", BorderColour: "near-white"},
-			view.Media{URL: "http://example.com/3.jpg", BorderColour: "near-white"},
+			view.Media{URL: "http://example.com/1.jpg", IsPublished: true},
+			view.Media{URL: "http://example.com/2.jpg", IsPublished: false},
+			view.Media{
+				URL:         "http://example.com/3.jpg",
+				IsPublished: false,
+				HumanDate:   "Sat, Jan 28, 2006 15:04 +0000",
+				MachineDate: "2006-01-28T15:04:05Z",
+				Lat:         0,
+				Lng:         0,
+			},
 		},
 		AfterKey:  "test-after-key",
 		HasPaging: true,
@@ -85,15 +92,17 @@ func TestParseMediaListViewModel(t *testing.T) {
 			view.MediaDay{
 				Date: "Sat, 28 January",
 				Media: []view.Media{
-					view.Media{URL: "http://example.com/1.jpg", BorderColour: "red"},
+					view.Media{URL: "http://example.com/1.jpg"},
 				},
+				Count: 1,
 			},
 			view.MediaDay{
 				Date: "Sun, 28 January",
 				Media: []view.Media{
-					view.Media{URL: "http://example.com/2.jpg", BorderColour: "near-white"},
-					view.Media{URL: "http://example.com/3.jpg", BorderColour: "near-white"},
+					view.Media{URL: "http://example.com/2.jpg"},
+					view.Media{URL: "http://example.com/3.jpg"},
 				},
+				Count: 2,
 			},
 		},
 	}
@@ -102,6 +111,6 @@ func TestParseMediaListViewModel(t *testing.T) {
 	result := view.ParseListMediaView(mediaResponse)
 
 	// assert
-	is.Equal(result, expected)
+	is.Equal(result.Media, expected.Media)
 
 }

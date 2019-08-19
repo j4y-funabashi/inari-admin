@@ -24,7 +24,7 @@
 
     {{ with .Media }}
     <div class="columns is-mobile is-gapless">
-      {{ range . }}
+      {{ range index .}}
       <div class="column">
         {{ template "media-thumbnail" . }} {{ if .IsPublished }}
         <span class="tag is-info">x</span>

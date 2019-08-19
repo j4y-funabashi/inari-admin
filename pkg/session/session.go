@@ -74,6 +74,10 @@ func (loc Location) ToGeoURL() string {
 	return fmt.Sprintf("geo:%v,%v", loc.Lat, loc.Lng)
 }
 
+func (loc Location) ToHuman() string {
+	return fmt.Sprintf("%s, %s, %s", loc.Locality, loc.Region, loc.Country)
+}
+
 func (usess *UserSession) AddLocation(loc Location) {
 	if loc.HasLatLng() {
 		usess.ComposerData.Location = loc

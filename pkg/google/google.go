@@ -3,6 +3,7 @@ package google
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -38,6 +39,11 @@ func (res geocodeResult) GetLocality() string {
 	if locality == "" {
 		locality = res.GetComponent("sublocality")
 	}
+
+	if locality == "" {
+		locality = res.GetComponent("postal_town")
+	}
+
 	return locality
 }
 
@@ -84,6 +90,53 @@ func (geocoder Geocoder) Lookup(address string) []session.Location {
 	q := apiBaseURL.Query()
 	q.Add("key", geocoder.apiKey)
 	q.Add("address", address)
+	apiBaseURL.RawQuery = q.Encode()
+	geocoder.logger.WithField("url", apiBaseURL).Info("venue search")
+
+	// call url
+	resp, err := http.Get(apiBaseURL.String())
+	if err != nil {
+		geocoder.logger.WithError(err).Error("failed to GET")
+		return locList
+	}
+
+	// parse response
+	geocodeRes := geocodeResults{}
+	buf := bytes.Buffer{}
+	buf.ReadFrom(resp.Body)
+	err = json.Unmarshal(buf.Bytes(), &geocodeRes)
+	if err != nil {
+		geocoder.logger.WithError(err).Error("failed to unmarshal geocode response")
+		return locList
+	}
+
+	for _, result := range geocodeRes.Response {
+		locList = append(locList, session.Location{
+			Lat:      result.Geometry.Location.Lat,
+			Lng:      result.Geometry.Location.Lng,
+			Locality: result.GetLocality(),
+			Region:   result.GetComponent("administrative_area_level_2"),
+			Country:  result.GetComponent("country"),
+		})
+	}
+
+	geocoder.logger.
+		WithField("locList", locList).Info("response")
+	return locList
+}
+
+func (geocoder Geocoder) LookupLatLng(lat, lng float64) []session.Location {
+	locList := []session.Location{}
+
+	// build url
+	apiBaseURL, err := url.Parse(geocoder.baseURL)
+	if err != nil {
+		geocoder.logger.WithError(err).Error("failed to parse url")
+		return locList
+	}
+	q := apiBaseURL.Query()
+	q.Add("key", geocoder.apiKey)
+	q.Add("latlng", fmt.Sprintf("%g,%g", lat, lng))
 	apiBaseURL.RawQuery = q.Encode()
 	geocoder.logger.WithField("url", apiBaseURL).Info("venue search")
 

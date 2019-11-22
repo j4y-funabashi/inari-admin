@@ -41,10 +41,11 @@ type ListMediaView struct {
 }
 
 type MediaDay struct {
-	Date  string
-	Media []Media
-	Count int
-	Link  string
+	Date           string
+	Media          []Media
+	Count          int
+	PublishedCount int
+	Link           string
 }
 
 type Media struct {
@@ -170,15 +171,28 @@ func parseMediaDays(media []okami.Media, currentMonth, currentYear string) []Med
 		out = append(
 			out,
 			MediaDay{
-				Date:  mediaDay.Format(HumanDayLayout),
-				Media: dayMap[day][0:limit],
-				Count: len(dayMap[day]),
-				Link:  dayLink,
+				Date:           mediaDay.Format(HumanDayLayout),
+				Media:          dayMap[day][0:limit],
+				Count:          len(dayMap[day]),
+				PublishedCount: countPublished(dayMap[day]),
+				Link:           dayLink,
 			},
 		)
 	}
 
 	return out
+}
+
+func countPublished(media []Media) int {
+	count := 0
+
+	for _, m := range media {
+		if m.IsPublished {
+			count++
+		}
+	}
+
+	return count
 }
 
 func parseMedia(media okami.Media) Media {
@@ -199,6 +213,27 @@ func parseMediaList(media []okami.Media) []Media {
 
 	for _, m := range media {
 		out = append(out, parseMedia(m))
+	}
+
+	return out
+}
+
+func parseMediaGrid(media []okami.Media) [][]Media {
+	columnCount := 4
+	out := [][]Media{}
+
+	i := 1
+	column := []Media{}
+	for _, m := range media {
+		column = append(column, parseMedia(m))
+		if i%columnCount == 0 {
+			out = append(out, column)
+			column = []Media{}
+		}
+		i++
+	}
+	if len(column) > 0 {
+		out = append(out, column)
 	}
 
 	return out
@@ -245,6 +280,7 @@ type MediaDayView struct {
 	CurrentMonth string
 	CurrentYear  string
 	Media        []Media
+	MediaGrid    [][]Media
 	PageTitle    string
 }
 
@@ -254,6 +290,7 @@ func ParseMediaDayView(mediaResponse okami.ListMediaResponse, selectedDay string
 	cm := parseMonth(mediaResponse.CurrentMonth)
 	cy := mediaResponse.CurrentYear
 	media := parseMediaList(filterMediaDay(mediaResponse.Media, selectedDay))
+	mediaGrid := parseMediaGrid(filterMediaDay(mediaResponse.Media, selectedDay))
 
 	return MediaDayView{
 		Months:       months,
@@ -261,6 +298,7 @@ func ParseMediaDayView(mediaResponse okami.ListMediaResponse, selectedDay string
 		CurrentMonth: cm,
 		CurrentYear:  cy,
 		Media:        media,
+		MediaGrid:    mediaGrid,
 		PageTitle:    "Choose some shiz to shizzle with",
 	}
 }

@@ -1,21 +1,26 @@
 {{ define "content" }}
 
-<div>
-  <a href="/composer">back</a>
-  <h1>{{ .PageTitle }}</h1>
-</div>
+<nav class="navbar">
+  <div class="navbar-start">
+    <a class="navbar-item" href="/composer">back</a>
+  </div>
+</nav>
+
+<h1>{{ .PageTitle }}</h1>
 
 <form method="get" action="/composer/addlocation">
-  <label for="q">Search for a city, coutry</label>
-  <input
-    id="q"
-    type="text"
-    name="q"
-    class='{{ template "input-text" }}'
-    placeholder="City, Country"
-    required
-    autofocus
-  />
+  <div class="field">
+    <label class="label" for="q">Search for a city, coutry</label>
+    <input
+      id="q"
+      type="text"
+      name="q"
+      class="input"
+      placeholder="City, Country"
+      required
+      autofocus
+    />
+  </div>
 </form>
 
 <ul>

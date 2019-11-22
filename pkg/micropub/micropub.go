@@ -176,6 +176,7 @@ func (s *server) HandleAddMediaToComposer() http.HandlerFunc {
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}
+
 		s.logger.WithField("user", usess).Info("logged in user")
 
 		lat, err := strconv.ParseFloat(r.FormValue("lat"), 64)
@@ -295,16 +296,14 @@ func (s *server) HandleSubmit() http.HandlerFunc {
 			return
 		}
 
-		response := s.SubmitPost(
+		s.SubmitPost(
 			cookie.Value,
 			r.FormValue("content"),
 			r.FormValue("h"),
 		)
-		for k, v := range response.Headers {
-			w.Header().Set(k, v)
-		}
-		w.WriteHeader(response.StatusCode)
-		w.Write([]byte(response.Body))
+
+		w.Header().Set("Location", "/composer")
+		w.WriteHeader(http.StatusSeeOther)
 	}
 }
 

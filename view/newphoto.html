@@ -1,11 +1,14 @@
 {{ define "content" }}
 
-<div>
-  <a href="/composer">back</a>
-  <a href="/composer/media/device">Device</a>
-  <a href="/composer/media/gallery">Gallery</a>
-  <h1>{{ .PageTitle }}</h1>
-</div>
+<nav class="navbar">
+  <div class="navbar-start">
+    <a class="navbar-item" href="/composer">back</a>
+    <a class="navbar-item" href="/composer/media/device">Device</a>
+    <a class="navbar-item" href="/composer/media/gallery">Gallery</a>
+  </div>
+</nav>
+
+<h1>{{ .PageTitle }}</h1>
 
 <form method="post" action="/composer/addphoto" enctype="multipart/form-data">
   <input

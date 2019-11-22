@@ -1,11 +1,14 @@
 {{ define "content" }}
 
-<div>
-  <a href="/composer">back</a>
-  <a href="/composer/media/device">Device</a>
-  <a href="/composer/media/gallery">Gallery</a>
-  <h1>{{ .PageTitle }}</h1>
-</div>
+<nav class="navbar">
+  <div class="navbar-start">
+    <a class="navbar-item" href="/composer">back</a>
+    <a class="navbar-item" href="/composer/media/device">Device</a>
+    <a class="navbar-item" href="/composer/media/gallery">Gallery</a>
+  </div>
+</nav>
+
+<h1>{{ .PageTitle }}</h1>
 
 <nav class="breadcrumb" aria-label="breadcrumbs">
   <ul>
@@ -16,61 +19,67 @@
   </ul>
 </nav>
 
-{{ with .Media }} {{ range . }}
-<div class="card">
-  <div class="card-header">
-    <h1 class="card-header-title">{{ .HumanDate }}</h1>
-  </div>
-
-  <div class="card-image">
-    <figure class="image">
-      <img src="https://images.weserv.nl/?w=500&t=fit&url={{ .URL }}" />
-    </figure>
-  </div>
-
-  <div class="card-content">
-    <form method="post" action="/composer/media">
-      <input type="hidden" name="url" value="{{ .URL }}" />
-      <input type="hidden" name="datetime" value="{{ .MachineDate }}" />
-
-      <input type="hidden" name="lat" value="{{ .Lat }}" />
-      <input type="hidden" name="lng" value="{{ .Lng }}" />
-
-      {{ if .IsPublished }} Published! {{ else }}
-      <button type="submit" class="button is-primary is-fullwidth">
-        Add to post
-      </button>
-      {{ end }}
-    </form>
-  </div>
-</div>
-{{ end }} {{ end }}
-
-<div>
-  <h3>{{ .CurrentYear }} / {{ .CurrentMonth }}</h3>
-  <!-- months -->
-  {{ with .Months }}
-  <ul class="">
+<!-- mediaGrid -->
+{{ with .MediaGrid }}
+  <div>
     {{ range . }}
-    <li>
-      <a href="{{ .Link }}">{{ .Month }}</a>
-      ({{ .Count }})
-    </li>
-    {{ end }}
-  </ul>
-  {{ end }}
 
-  <!-- years -->
-  {{ with .Years }}
-  <ul class="">
-    {{ range . }}
-    <li>
-      <a href="{{ .Link }}">{{ .Year }}</a>
-      ({{ .Count }})
-    </li>
-    {{ end }}
-  </ul>
-  {{ end }}
-</div>
+      <div class="columns is-gapless is-multiline is-mobile">
+        {{ range . }}
+          <div class="column">
+              {{ template "media-thumbnail" . }}
 
+              {{ if .IsPublished }}
+                <span class="icon has-text-success">
+                  <i class="fas fa-check-square"></i>
+                </span>
+              {{ else }}
+                <form method="post" action="/composer/media">
+                  <input type="hidden" name="url" value="{{ .URL }}" />
+                  <input type="hidden" name="datetime" value="{{ .MachineDate }}" />
+                  <input type="hidden" name="lat" value="{{ .Lat }}" />
+                  <input type="hidden" name="lng" value="{{ .Lng }}" />
+                  <button type="submit" class="button is-success is-fullwidth">
+                    <span class="icon is-small">
+                      <i class="fas fa-plus-square"></i>
+                    </span>
+                  </button>
+                </form>
+              {{ end }}
+
+          </div>
+        {{ end }}
+      </div>
+
+    {{ end }}
+  </div>
 {{ end }}
+
+<!-- time navigation -->
+<div>
+    <h3>{{ .CurrentYear }} / {{ .CurrentMonth }}</h3>
+    <!-- months -->
+    {{ with .Months }}
+    <ul class="">
+      {{ range . }}
+      <li>
+        <a href="{{ .Link }}">{{ .Month }}</a>
+        ({{ .Count }})
+      </li>
+      {{ end }}
+    </ul>
+    {{ end }}
+    <!-- years -->
+    {{ with .Years }}
+    <ul class="">
+      {{ range . }}
+      <li>
+        <a href="{{ .Link }}">{{ .Year }}</a>
+        ({{ .Count }})
+      </li>
+      {{ end }}
+    </ul>
+    {{ end }}
+  </div>
+  {{ end }}
+</div>

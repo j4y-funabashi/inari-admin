@@ -25,7 +25,7 @@ func TestItFormatsDates(t *testing.T) {
 	}
 
 	is.Equal(
-		"Mon, Jan 28, 2019 13:00 +0000",
+		"Mon, Jan 28, 2019 13:00",
 		media.HumanDate(),
 	)
 	is.Equal(
@@ -55,9 +55,21 @@ func TestParseMediaListViewModel(t *testing.T) {
 			okami.ArchiveYear{Year: "2016", Count: 4},
 		},
 		Media: []okami.Media{
-			okami.Media{URL: "http://example.com/1.jpg", DateTime: &mediaDat1, IsPublished: true},
-			okami.Media{URL: "http://example.com/2.jpg", DateTime: &mediaDat2, IsPublished: false},
-			okami.Media{URL: "http://example.com/3.jpg", DateTime: &mediaDat2, IsPublished: false},
+			okami.Media{
+				URL:         "http://example.com/1.jpg",
+				DateTime:    &mediaDat1,
+				IsPublished: true,
+			},
+			okami.Media{
+				URL:         "http://example.com/2.jpg",
+				DateTime:    &mediaDat2,
+				IsPublished: false,
+			},
+			okami.Media{
+				URL:         "http://example.com/3.jpg",
+				DateTime:    &mediaDat2,
+				IsPublished: false,
+			},
 		},
 		AfterKey: "test-after-key",
 	}
@@ -74,12 +86,26 @@ func TestParseMediaListViewModel(t *testing.T) {
 		CurrentMonth: "March",
 		CurrentYear:  "2019",
 		Media: []view.Media{
-			view.Media{URL: "http://example.com/1.jpg", IsPublished: true},
-			view.Media{URL: "http://example.com/2.jpg", IsPublished: false},
+			view.Media{
+				URL:         "http://example.com/1.jpg",
+				IsPublished: true,
+				HumanDate:   "Sat, Jan 28, 2006 15:04",
+				MachineDate: "2007-01-28T15:04:05Z",
+				Lat:         0,
+				Lng:         0,
+			},
+			view.Media{
+				URL:         "http://example.com/2.jpg",
+				IsPublished: false,
+				HumanDate:   "Sat, Jan 28, 2007 15:04",
+				MachineDate: "2007-01-28T15:04:05Z",
+				Lat:         0,
+				Lng:         0,
+			},
 			view.Media{
 				URL:         "http://example.com/3.jpg",
 				IsPublished: false,
-				HumanDate:   "Sat, Jan 28, 2006 15:04 +0000",
+				HumanDate:   "Sat, Jan 28, 2007 15:04",
 				MachineDate: "2006-01-28T15:04:05Z",
 				Lat:         0,
 				Lng:         0,
@@ -111,6 +137,10 @@ func TestParseMediaListViewModel(t *testing.T) {
 	result := view.ParseListMediaView(mediaResponse)
 
 	// assert
+	is.Equal(result.Months, expected.Months)
+	is.Equal(result.Years, expected.Years)
+	is.Equal(result.CurrentMonth, expected.CurrentMonth)
+	is.Equal(result.CurrentYear, expected.CurrentYear)
 	is.Equal(result.Media, expected.Media)
 
 }
